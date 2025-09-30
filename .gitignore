@@ -1,0 +1,33 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node (both apps)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+.cache/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Builds / artifacts
+dist/
+build/
+tmp/
+temp/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+web-build/
+.expo-packager/
+metro-cache/
+ios/
+android/
