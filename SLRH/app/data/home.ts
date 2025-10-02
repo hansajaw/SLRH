@@ -1,7 +1,7 @@
 // app/data/home.ts
 import type { ImageSourcePropType } from "react-native";
 
-/** Shared types */
+/* ---------- Shared types ---------- */
 export type EventItem = {
   _id: string;
   slug?: string;
@@ -9,11 +9,11 @@ export type EventItem = {
   name?: string;
   city?: string;
   location?: { city?: string };
-  dateUtc?: string;            // if you prefer UTC strings
-  scheduledDateTime?: string;  // ISO (recommended)
-  date?: string;               // legacy yyyy-mm-ddThh:mm
-  startTime?: string;
-  heroImage?: string | ImageSourcePropType; // string URL or local require()
+  dateUtc?: string;
+  scheduledDateTime?: string;     // ISO (recommended)
+  date?: string;                  // legacy yyyy-mm-dd
+  startTime?: string;             // legacy hh:mm
+  heroImage?: string | ImageSourcePropType;
   banner?: string | ImageSourcePropType;
   image?: string | ImageSourcePropType;
 };
@@ -26,7 +26,7 @@ export type PlayerItem = {
     _id?: string;
     name?: string;
     profilePicture?: string | ImageSourcePropType;
-    bestAchievement?: string; // plain text or JSON string
+    bestAchievement?: string;     // plain text or JSON string
   };
 };
 
@@ -37,7 +37,7 @@ export type NewsItem = {
   category?: string;
   image?: string | ImageSourcePropType;
   banner?: string | ImageSourcePropType;
-  publishedAt?: string; // ISO
+  publishedAt?: string;           // ISO
   createdAt?: string;
   excerpt?: string;
 };
@@ -47,12 +47,16 @@ export type ResultItem = {
   slug?: string;
   title: string;
   city?: string;
-  occurredAt: string; // ISO date of the race
+  occurredAt: string;             // ISO date of the race
   banner?: string | ImageSourcePropType;
-  topFinishers?: Array<{ place: 1 | 2 | 3; name: string; avatar?: string | ImageSourcePropType }>;
+  topFinishers?: Array<{
+    place: 1 | 2 | 3;
+    name: string;
+    avatar?: string | ImageSourcePropType;
+  }>;
 };
 
-/** ---- Seed data (edit freely) ---- */
+/* ---------- Seed data ---------- */
 export const EVENTS: EventItem[] = [
   {
     _id: "colombo-2025",
@@ -114,9 +118,7 @@ export const NEWS: NewsItem[] = [
   },
 ];
 
-/** ---- Race Results (new) ----
- * Make sure these image files exist in /assets/results/.
- */
+/* ---------- Race Results ---------- */
 export const RESULTS: ResultItem[] = [
   {
     _id: "res-matara-2025",
@@ -159,12 +161,12 @@ export const RESULTS: ResultItem[] = [
   },
 ];
 
-/** Optionally wrap in functions if you prefer async-like usage later */
+/* ---------- Accessor ---------- */
 export function getHomeData() {
   return {
     events: EVENTS,
     players: TOP_PLAYERS,
     news: NEWS,
-    results: RESULTS, // <-- IMPORTANT: expose results
+    results: RESULTS,
   };
 }
