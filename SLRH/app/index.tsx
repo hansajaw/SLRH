@@ -74,7 +74,7 @@ export default function Home() {
       keyExtractor={(it) => String(it._id)}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#fff" />}
       renderItem={({ item }) => <EventCard item={item} />}
-      ListEmptyComponent={<Text style={{ color: '#999', padding: 16 }}>No events yet.</Text>}
+      ListEmptyComponent={<Text style={{ color: '#ffff', padding: 16 }}>No events yet.</Text>}
     />
   );
 }
