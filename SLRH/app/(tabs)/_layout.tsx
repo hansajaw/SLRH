@@ -13,29 +13,28 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: "#00E0C6",
         tabBarInactiveTintColor: "#9AA0A6",
-        tabBarLabelStyle: { fontSize: 12, fontWeight: "600", marginBottom: 2 },
-
-        // ✅ SOLID bar (not transparent)
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+          marginBottom: 2,
+        },
         tabBarStyle: {
-          backgroundColor: "#0b0b0b",        // solid background
-          borderTopColor: "#1a1a1a",         // thin divider
+          backgroundColor: "#0b0b0b",
+          borderTopColor: "#1a1a1a",
           borderTopWidth: 1,
-          height: Math.max(64, 56 + insets.bottom), // give it height & safe-area padding
+          height: Math.max(64, 56 + insets.bottom),
           paddingBottom: insets.bottom > 0 ? insets.bottom - 2 : 8,
           paddingTop: 8,
-
-          // nice shadow on Android/iOS
-          elevation: 10,                      // Android shadow
+          elevation: 10,
           shadowColor: "#000",
           shadowOpacity: 0.25,
           shadowOffset: { width: 0, height: -2 },
           shadowRadius: 8,
         },
-
-        // helpful when typing
         tabBarHideOnKeyboard: true,
       }}
     >
+      {/* 🏠 Home */}
       <Tabs.Screen
         name="index"
         options={{
@@ -45,15 +44,19 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      {/* 🏎️ Racing */}
       <Tabs.Screen
-        name="live/index"
+        name="racing/index"
         options={{
-          title: "Live",
+          title: "Racing",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="radio" color={color} size={size} />
+            <Ionicons name="speedometer" color={color} size={size} />
           ),
         }}
       />
+
+      {/* 📰 Media */}
       <Tabs.Screen
         name="media/index"
         options={{
@@ -63,14 +66,30 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      {/* 👥 People */}
       <Tabs.Screen
-        name="blog/index"
+        name="people/index"
         options={{
-          title: "Blog",
+          title: "People",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="newspaper" color={color} size={size} />
+            <Ionicons name="people" color={color} size={size} />
           ),
         }}
+      />
+
+      {/* Hidden detail screens */}
+      <Tabs.Screen
+        name="people/driver/[id]"
+        options={{ href: null, headerShown: false }}
+      />
+      <Tabs.Screen
+        name="people/team/[id]"
+        options={{ href: null, headerShown: false }}
+      />
+      <Tabs.Screen
+        name="racing/[id]"
+        options={{ href: null, headerShown: false }}
       />
     </Tabs>
   );

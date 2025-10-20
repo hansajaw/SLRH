@@ -1,275 +1,299 @@
-import { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  FlatList,
   Image,
   Pressable,
+  StyleSheet,
+  Animated,
+  Modal,
   Dimensions,
-  ImageSourcePropType,
-  ScrollView,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
-import { Link } from "expo-router";
+import { Video, ResizeMode } from "expo-av";
 import SafeScreen from "../../../components/SafeScreen";
-import TopBar from "../../../components/TopBar";
-import { getMediaData } from "../../data/media";
-import type { MediaImage, MediaVideo } from "../../data/media";
-import type { NewsItem } from "../../data/home";
+import SegmentedBar from "../../../components/SegmentedBar";
+import {
+  getVideos,
+  getAlbums,
+  getAlbumImages,
+  getNews,
+  type MediaVideo,
+  type Album,
+  type MediaImage,
+  type NewsItem,
+} from "../../data/media";
+import { useLocalSearchParams } from "expo-router";
 
-const W = Dimensions.get("window").width;
-const PAD = 14;
-const CARD_W = Math.max(300, W - PAD * 2);
+/* ---------------- Tabs ---------------- */
+const TABS = ["Videos", "Images", "News"] as const;
+type TabKey = (typeof TABS)[number];
 
-type TabKey = "Videos" | "Images" | "News";
+/* Helper: map any incoming string to a valid tab */
+function normalizeTab(input?: string): TabKey {
+  const t = (input ?? "").toString().trim().toLowerCase();
+  if (t.startsWith("new")) return "News";
+  if (t.startsWith("img") || t.startsWith("pho")) return "Images";
+  return "Videos";
+}
 
-const asSrc = (s?: string | ImageSourcePropType) =>
-  typeof s === "string" ? { uri: s } : (s as ImageSourcePropType);
+const { width: W } = Dimensions.get("window");
+
+/* Helper to ensure valid Image source */
+const toImageSrc = (src?: string | any) =>
+  typeof src === "string" ? { uri: src } : src;
 
 export default function MediaScreen() {
-  const [tab, setTab] = useState<TabKey>("Videos");
-  const { videos, images, news } = useMemo(() => getMediaData(), []);
-  const tabs: TabKey[] = ["Videos", "Images", "News"];
+  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
+
+  // initialize from URL param on first render
+  const initialTab = useMemo<TabKey>(() => normalizeTab(tabParam), [tabParam]);
+  const [tab, setTab] = useState<TabKey>(initialTab);
+
+  // also react to param changes while mounted
+  useEffect(() => {
+    setTab(normalizeTab(tabParam));
+  }, [tabParam]);
+
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const [videos, setVideos] = useState<MediaVideo[]>([]);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [selectedVideo, setSelectedVideo] = useState<MediaVideo | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [albumImages, setAlbumImages] = useState<MediaImage[]>([]);
+  const [selectedImage, setSelectedImage] = useState<MediaImage | null>(null);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setVideos(await getVideos());
+        setAlbums(await getAlbums());
+        setNews(await getNews());
+      } catch (err) {
+        console.warn("Media load error", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  function switchTab(next: TabKey) {
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]).start();
+    setTab(next);
+    setSelectedAlbum(null);
+    setSelectedImage(null);
+    setSelectedNews(null);
+    setSelectedVideo(null);
+  }
+
+  async function openAlbum(a: Album) {
+    setSelectedAlbum(a);
+    // If your getAlbumImages does not accept an id, change to: await getAlbumImages()
+    setAlbumImages(await getAlbumImages(a._id as any));
+  }
+
+  const Empty = ({ text }: { text: string }) => (
+    <View style={s.emptyWrap}>
+      <Text style={s.emptyText}>{text}</Text>
+    </View>
+  );
 
   return (
     <SafeScreen bg="#0b0b0b">
-      <TopBar title="Media" />
-
-      {/* Tab switcher */}
-      <View style={styles.tabsWrap}>
-        <View style={styles.tabs}>
-          {tabs.map((t) => {
-            const active = tab === t;
-            return (
-              <Pressable key={t} onPress={() => setTab(t)} style={[styles.tabBtn, active && styles.tabBtnActive]}>
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{t}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+      <View style={s.header}>
+        <Text style={s.pageTitle}>Media Hub</Text>
       </View>
 
-      {/* CONTENT */}
-      {tab === "Videos" && <VideosView videos={videos} />}
-      {tab === "Images" && <ImagesView images={images} />}
-      {tab === "News" && <NewsView news={news} />}
+      <SegmentedBar tabs={TABS} value={tab} onChange={switchTab} />
+
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        {loading ? (
+          <View style={s.loader}>
+            <ActivityIndicator color="#00E0C6" size="large" />
+          </View>
+        ) : (
+          <>
+            {/* -------------------- VIDEOS -------------------- */}
+            {tab === "Videos" && (
+              <>
+                {selectedVideo && (
+                  <Modal
+                    visible
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setSelectedVideo(null)}
+                  >
+                    <Pressable style={s.modalBg} onPress={() => setSelectedVideo(null)}>
+                      <Video
+                        source={{ uri: selectedVideo.source }}
+                        style={s.modalVideo}
+                        useNativeControls
+                        resizeMode={ResizeMode.CONTAIN}
+                        shouldPlay
+                      />
+                    </Pressable>
+                  </Modal>
+                )}
+                <FlatList
+                  data={videos}
+                  keyExtractor={(v) => v._id}
+                  contentContainerStyle={s.scrollPad}
+                  ListEmptyComponent={<Empty text="No videos yet" />}
+                  renderItem={({ item }) => (
+                    <Pressable style={s.card} onPress={() => setSelectedVideo(item)}>
+                      <Image source={toImageSrc(item.thumbnail)} style={s.thumb} />
+                      <View style={s.caption}>
+                        <Text style={s.title}>{item.title}</Text>
+                        {!!item.duration && <Text style={s.meta}>{item.duration}</Text>}
+                      </View>
+                    </Pressable>
+                  )}
+                />
+              </>
+            )}
+
+            {/* -------------------- IMAGES -------------------- */}
+            {tab === "Images" && (
+              <>
+                {!selectedAlbum ? (
+                  <FlatList
+                    data={albums}
+                    numColumns={2}
+                    keyExtractor={(a) => a._id}
+                    contentContainerStyle={[s.scrollPad, { justifyContent: "center" }]}
+                    ListEmptyComponent={<Empty text="No albums yet" />}
+                    renderItem={({ item }) => (
+                      <Pressable key={item._id} style={s.album} onPress={() => openAlbum(item)}>
+                        <Image source={toImageSrc(item.cover)} style={s.albumImg} />
+                        <View style={s.overlay} />
+                        <Text style={s.albumTitle}>{item.title}</Text>
+                      </Pressable>
+                    )}
+                  />
+                ) : (
+                  <FlatList
+                    data={albumImages}
+                    numColumns={3}
+                    keyExtractor={(i) => i._id}
+                    columnWrapperStyle={{ gap: 6 }}
+                    contentContainerStyle={{ gap: 6, marginTop: 8, padding: 12 }}
+                    ListHeaderComponent={
+                      <Pressable onPress={() => setSelectedAlbum(null)}>
+                        <Text style={s.back}>← Back to Albums</Text>
+                      </Pressable>
+                    }
+                    renderItem={({ item }) => (
+                      <Pressable onPress={() => setSelectedImage(item)} style={s.imgTile}>
+                        <Image source={toImageSrc(item.src)} style={s.img} />
+                      </Pressable>
+                    )}
+                  />
+                )}
+                <Modal
+                  visible={!!selectedImage}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setSelectedImage(null)}
+                >
+                  <Pressable style={s.modalBg} onPress={() => setSelectedImage(null)}>
+                    {selectedImage && (
+                      <>
+                        <Image source={toImageSrc(selectedImage.src)} style={s.modalImg} />
+                        {selectedImage?.caption && <Text style={s.modalCap}>{selectedImage.caption}</Text>}
+                      </>
+                    )}
+                  </Pressable>
+                </Modal>
+              </>
+            )}
+
+            {/* -------------------- NEWS -------------------- */}
+            {tab === "News" && (
+              <>
+                {!selectedNews ? (
+                  <FlatList
+                    data={news}
+                    keyExtractor={(n) => n._id}
+                    contentContainerStyle={s.scrollPad}
+                    ListEmptyComponent={<Empty text="No news available" />}
+                    renderItem={({ item }) => (
+                      <Pressable key={item._id} style={s.newsCard} onPress={() => setSelectedNews(item)}>
+                        <Image source={toImageSrc(item.banner)} style={s.newsImg} />
+                        <View style={s.newsText}>
+                          <Text style={s.title}>{item.title}</Text>
+                          <Text numberOfLines={2} style={s.meta}>{item.excerpt}</Text>
+                        </View>
+                      </Pressable>
+                    )}
+                  />
+                ) : (
+                  <FlatList
+                    data={[selectedNews]}
+                    keyExtractor={(n) => n._id}
+                    contentContainerStyle={s.scrollPad}
+                    ListHeaderComponent={
+                      <Pressable onPress={() => setSelectedNews(null)}>
+                        <Text style={s.back}>← Back to News</Text>
+                      </Pressable>
+                    }
+                    renderItem={({ item }) => (
+                      <View>
+                        <Image source={toImageSrc(item.banner)} style={s.newsHero} />
+                        <Text style={s.newsTitle}>{item.title}</Text>
+                        <Text style={s.newsBody}>
+                          {item.excerpt ?? "Full article coming soon..."}
+                        </Text>
+                      </View>
+                    )}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+      </Animated.View>
     </SafeScreen>
   );
 }
 
-/* --------------------- Videos --------------------- */
-function VideosView({ videos }: { videos: MediaVideo[] }) {
-  // horizontal featured rail
-  return (
-    <ScrollView contentContainerStyle={{ padding: PAD, paddingBottom: 88 }}>
-      <Text style={styles.sectionTitle}>🎬 Featured</Text>
-      <FlatList
-        data={videos.slice(0, 10)}
-        keyExtractor={(it) => String(it._id)}
-        renderItem={({ item }) => <VideoCard item={item} width={CARD_W} />}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ columnGap: PAD, paddingRight: PAD }}
-        snapToInterval={CARD_W + PAD}
-        decelerationRate="fast"
-        snapToAlignment="start"
-        style={{ marginBottom: 14 }}
-      />
-
-      <Text style={styles.sectionTitle}>All Videos</Text>
-      <View style={{ gap: 12 }}>
-        {videos.map((v) => (
-          <VideoRow key={v._id} item={v} />
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
-function VideoCard({ item, width }: { item: MediaVideo; width: number }) {
-  return (
-    <View style={[styles.videoCard, { width }]}>
-      <Image source={asSrc(item.thumbnail)} style={styles.videoImg} />
-      <View style={styles.playOverlay}>
-        <Text style={styles.playSymbol}>▶</Text>
-      </View>
-      <View style={styles.videoMeta}>
-        <Text style={styles.videoTitle} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.videoSub}>{item.duration ?? ""}</Text>
-      </View>
-      {/* Link to a player page if you add one later */}
-    </View>
-  );
-}
-
-function VideoRow({ item }: { item: MediaVideo }) {
-  return (
-    <View style={styles.videoRow}>
-      <Image source={asSrc(item.thumbnail)} style={styles.videoRowImg} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.videoRowTitle} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.videoRowSub} numberOfLines={1}>
-          {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : ""} {item.duration ? ` · ${item.duration}` : ""}
-        </Text>
-      </View>
-      <Pressable style={styles.rowPlay}><Text style={{ color: "#fff", fontWeight: "800" }}>▶</Text></Pressable>
-    </View>
-  );
-}
-
-/* --------------------- Images --------------------- */
-function ImagesView({ images }: { images: MediaImage[] }) {
-  // simple 2-column grid
-  const size = Math.floor((W - PAD * 3) / 2); // 2 columns with gaps and side padding
-  return (
-    <FlatList
-      data={images}
-      keyExtractor={(it) => String(it._id)}
-      numColumns={2}
-      contentContainerStyle={{ padding: PAD, paddingBottom: 88, rowGap: PAD, columnGap: PAD }}
-      renderItem={({ item }) => (
-        <View style={[styles.imageTile, { width: size, height: size }]}>
-          <Image source={asSrc(item.src)} style={{ width: "100%", height: "100%" }} />
-          <View style={styles.imageShade} />
-          <Text style={styles.imageCaption} numberOfLines={2}>{item.caption || ""}</Text>
-        </View>
-      )}
-    />
-  );
-}
-
-/* --------------------- News --------------------- */
-function NewsView({ news }: { news: NewsItem[] }) {
-  return (
-    <ScrollView contentContainerStyle={{ padding: PAD, paddingBottom: 88 }}>
-      <FlatList
-        data={news}
-        keyExtractor={(it) => String(it._id)}
-        renderItem={({ item }) => <NewsCard item={item} width={CARD_W} />}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ columnGap: PAD, paddingRight: PAD }}
-        snapToInterval={CARD_W + PAD}
-        decelerationRate="fast"
-        snapToAlignment="start"
-        ListHeaderComponent={<Text style={[styles.sectionTitle, { marginBottom: 8 }]}>Latest News</Text>}
-      />
-
-      <View style={{ height: 12 }} />
-
-      {news.slice(0, 20).map((n) => (
-        <Link key={n._id} href="/media" asChild>
-          <Pressable style={styles.newsRow}>
-            <Image source={asSrc(n.banner || n.image)} style={styles.newsRowImg} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.newsRowTitle} numberOfLines={2}>{n.title}</Text>
-              <Text style={styles.newsRowSub} numberOfLines={1}>
-                {n.publishedAt ? new Date(n.publishedAt).toLocaleDateString() : ""}
-                {n.category ? `  •  ${n.category}` : ""}
-              </Text>
-            </View>
-          </Pressable>
-        </Link>
-      ))}
-    </ScrollView>
-  );
-}
-
-function NewsCard({ item, width }: { item: NewsItem; width: number }) {
-  const when = item.publishedAt || item.createdAt;
-  const dt = when ? new Date(when) : undefined;
-  return (
-    <View style={[styles.newsCard, { width }]}>
-      <View style={styles.newsImgWrap}>
-        <Image source={asSrc(item.banner || item.image)} style={styles.newsImg} />
-        <View style={styles.imgOverlay} />
-        <View style={styles.newsHead}>
-          <Text style={styles.newsTitle} numberOfLines={1}>{item.title}</Text>
-          <View style={styles.newsMetaRow}>
-            <Text style={styles.newsMeta}>📅 {dt ? dt.toLocaleDateString() : ""}</Text>
-            {!!item.category && <View style={styles.newsBadge}><Text style={styles.newsBadgeText}>{item.category}</Text></View>}
-          </View>
-        </View>
-      </View>
-      <View style={styles.newsFoot}>
-        <Text style={styles.newsExcerpt} numberOfLines={2}>{item.excerpt || ""}</Text>
-      </View>
-    </View>
-  );
-}
-
-/* --------------------- styles --------------------- */
-const styles = StyleSheet.create({
-  tabsWrap: { paddingHorizontal: PAD, paddingTop: 8, paddingBottom: 4, backgroundColor: "#0b0b0b" },
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 14,
-    padding: 4,
-    gap: 4,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  tabBtnActive: { backgroundColor: "#1f1f1f" },
-  tabText: { color: "#a9a9a9", fontWeight: "700" },
-  tabTextActive: { color: "#00E0C6" },
-
-  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "900", marginBottom: 8 },
-
-  /* video cards */
-  videoCard: { borderRadius: 16, overflow: "hidden", backgroundColor: "#151515" },
-  videoImg: { width: "100%", height: 180 },
-  playOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
-  playSymbol: {
-    fontSize: 40,
-    lineHeight: 40,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 30,
-  },
-  videoMeta: { padding: 12 },
-  videoTitle: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  videoSub: { color: "#cfcfcf", marginTop: 4 },
-
-  videoRow: {
-    flexDirection: "row",
-    gap: 12,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 14,
-    padding: 10,
-    alignItems: "center",
-  },
-  videoRowImg: { width: 120, height: 72, borderRadius: 10, backgroundColor: "#222" },
-  videoRowTitle: { color: "#fff", fontWeight: "800" },
-  videoRowSub: { color: "#bdbdbd", marginTop: 4 },
-  rowPlay: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#7e5bef", alignItems: "center", justifyContent: "center" },
-
-  /* image grid */
-  imageTile: { borderRadius: 14, overflow: "hidden", backgroundColor: "#111" },
-  imageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.15)" },
-  imageCaption: { position: "absolute", left: 8, right: 8, bottom: 8, color: "#fff", fontWeight: "700" },
-
-  /* news cards & rows */
-  newsCard: { borderRadius: 16, overflow: "hidden", backgroundColor: "#141414" },
-  newsImgWrap: { height: 170, overflow: "hidden" },
-  newsImg: { width: "100%", height: "100%" },
-  imgOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.25)" },
-  newsHead: { position: "absolute", left: 12, right: 12, bottom: 10 },
-  newsTitle: { color: "#fff", fontWeight: "900", fontSize: 18 },
-  newsMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  newsMeta: { color: "#eaeaea" },
-  newsBadge: { backgroundColor: "#1fb6ff", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
-  newsBadgeText: { color: "#001018", fontWeight: "900", fontSize: 12 },
-  newsFoot: { paddingHorizontal: 12, paddingVertical: 12, backgroundColor: "rgba(255,255,255,0.04)" },
-  newsExcerpt: { color: "#cfcfcf" },
-
-  newsRow: { flexDirection: "row", gap: 12, alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 10, marginBottom: 10 },
-  newsRowImg: { width: 80, height: 60, borderRadius: 10, backgroundColor: "#222" },
-  newsRowTitle: { color: "#fff", fontWeight: "800" },
-  newsRowSub: { color: "#bdbdbd", marginTop: 2 },
+/* -------------------- STYLES -------------------- */
+const s = StyleSheet.create({
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
+  pageTitle: { color: "#EFFFFB", fontSize: 22, fontWeight: "900" },
+  scrollPad: { padding: 12, paddingBottom: 80 },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  emptyWrap: { flex: 1, alignItems: "center", paddingTop: 80 },
+  emptyText: { color: "#8ecac1", fontSize: 16, fontWeight: "600" },
+  card: { flexDirection: "row", marginVertical: 8, backgroundColor: "#101522", borderRadius: 12, overflow: "hidden" },
+  thumb: { width: 120, height: 80 },
+  caption: { flex: 1, padding: 10 },
+  title: { color: "#fff", fontWeight: "800" },
+  meta: { color: "#9aa" },
+  album: { width: W / 2.3, height: 150, borderRadius: 12, overflow: "hidden", marginBottom: 8 },
+  albumImg: { width: "100%", height: "100%" },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.25)" },
+  albumTitle: { position: "absolute", bottom: 8, left: 10, color: "#fff", fontWeight: "800" },
+  imgTile: { flex: 1 / 3, borderRadius: 10, overflow: "hidden" },
+  img: { width: "100%", height: 120 },
+  modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
+  modalImg: { width: "90%", height: "70%", resizeMode: "contain", borderRadius: 10 },
+  modalCap: { color: "#cfe", marginTop: 10, textAlign: "center" },
+  modalVideo: { width: "90%", height: (W * 0.9 * 9) / 16, borderRadius: 10 },
+  back: { color: "#00E0C6", marginBottom: 8, fontWeight: "700" },
+  newsCard: { marginBottom: 12, borderRadius: 12, overflow: "hidden", backgroundColor: "#101522" },
+  newsImg: { width: "100%", height: 150 },
+  newsText: { padding: 10 },
+  newsHero: { width: "100%", height: 220, borderRadius: 10, marginBottom: 12 },
+  newsTitle: { color: "#fff", fontWeight: "900", fontSize: 18, marginBottom: 6 },
+  newsBody: { color: "#cfe", lineHeight: 22 },
 });

@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "SLRH",
-    "slug": "SLRH",
+    "slug": "slrh",
+    "owner": "kasperdul",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,9 +10,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kasperdul.slrh"
     },
     "android": {
+      "package": "com.kasperdul.slrh",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,11 +41,19 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:3001",
+      "eas": {
+        "projectId": "f4de3798-8068-4011-9c71-2d8b3a73c64e"
+      }
     }
   }
 }

@@ -1,29 +1,71 @@
-import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import http from "http";
+import { Server } from "socket.io";
 
-import { connectDB } from './db.js';
-import eventsRouter from './routes/events.js';
-import { initLive } from './sockets/live.js';
+import productsRouter from "./routes/products.js";
+import cartRouter from "./routes/cart.js";
+import checkoutRouter from "./routes/checkout.js";
+import authRouter from "./routes/auth.js";
+import usersRouter from "./routes/users.js";
+
+dotenv.config();
 
 const app = express();
-app.use(helmet());
-app.use(cors({ origin: (process.env.CORS_ORIGIN || '*').split(',') }));
-app.use(express.json({ limit:'1mb' }));
-app.use(morgan('tiny'));
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST", "PATCH"] } });
 
-app.get('/api/v1/health', (_,res)=>res.json({ ok:true }));
-app.use('/api/v1/events', eventsRouter);
+const ALLOWED = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
-await connectDB(process.env.MONGO_URL);
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin) return cb(null, true); // RN/Emulator often sends no origin
+    if (ALLOWED.length === 0 || ALLOWED.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked for: ${origin}`), false);
+  },
+  credentials: true,
+}));
+app.use(express.json());
 
-const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: (process.env.CORS_ORIGIN || '*').split(',') } });
-initLive(io);
+// ROUTES
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", usersRouter);
+app.use("/api/v1/products", productsRouter);
+app.use("/api/v1/cart", cartRouter);
+app.use("/api/v1/checkout", checkoutRouter);
 
-const port = process.env.PORT || 3001;
-httpServer.listen(port, ()=>console.log(`🚀 API on http://localhost:${port}`));
+app.get("/", (_req, res) => res.send("✅ SLRH backend is running"));
+app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));
+
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+  socket.on("disconnect", () => console.log("Client disconnected:", socket.id));
+});
+
+const PORT = process.env.PORT || 3001;
+const MONGO_URI = process.env.MONGO_URI;
+
+["MONGO_URI", "PORT", "JWT_SECRET"].forEach((k) => {
+  if (!process.env[k]) { console.error(`❌ Missing ${k} in .env`); process.exit(1); }
+});
+
+async function start() {
+  try {
+    await mongoose.connect(MONGO_URI, { dbName: "slrh" });
+    console.log("✅ MongoDB connected");
+    server.listen(PORT, () => console.log(`🚀 Backend live on http://localhost:${PORT}`));
+  } catch (err) {
+    console.error("❌ Mongo connection failed:", err);
+    process.exit(1);
+  }
+}
+
+process.on("SIGINT", () => process.exit(0));
+process.on("SIGTERM", () => process.exit(0));
+
+start();

@@ -115,7 +115,7 @@ function HeroSlide({ event }: { event: EventItem }) {
           {city ? `${city}  •  ` : ""}{date}{date && time ? "  ·  " : ""}{time}
         </Text>
         {when && <CountdownTimer targetDate={when} />}
-        <Link href={{ pathname: "/race/[id]", params: { id } }} asChild>
+        <Link href={{ pathname: "/racing/[id]", params: { id } }} asChild>
           <Pressable style={styles.heroCTA}><Text style={styles.heroCTAText}>View Event →</Text></Pressable>
         </Link>
       </View>
@@ -160,7 +160,7 @@ function MiniEvent({ item }: { item: EventItem }) {
   const id = String(item.slug ?? item._id);
   const when = toEventDate(item);
   return (
-    <Link href={{ pathname: "/race/[id]", params: { id } }} asChild>
+    <Link href={{ pathname: "../race/[id]", params: { id } }} asChild>
       <Pressable style={styles.miniCard}>
         <View style={{ flex: 1 }}>
           <Text style={styles.miniTitle} numberOfLines={1}>{item.title || item.name}</Text>
@@ -182,7 +182,7 @@ function PlayerCard({ player, index }: { player: PlayerItem; index: number }) {
   }
   const playerId = player.player || player.playerDoc?._id;
   return (
-    <Link href={playerId ? ({ pathname: "/player/[id]", params: { id: String(playerId) } } as any) : "/"} asChild>
+    <Link href={playerId ? ({ pathname: "../player/[id]", params: { id: String(playerId) } } as any) : "/"} asChild>
       <Pressable style={styles.playerCard}>
         <Image source={asImageSource(profile)} style={styles.playerImg} />
         <View style={{ marginTop: 8 }}>
@@ -208,7 +208,7 @@ function ResultCard({ item, cardWidth }: { item: ResultItem; cardWidth: number }
           {item.city ? `📍 ${item.city}   ` : ""}📅 {d.toLocaleDateString()}
         </Text>
       </View>
-      <Link asChild href={{ pathname: "/race/[id]", params: { id: String(item.slug ?? item._id) } }}>
+      <Link asChild href={{ pathname: "../race/[id]", params: { id: String(item.slug ?? item._id) } }}>
         <Pressable style={StyleSheet.absoluteFill as any} />
       </Link>
     </View>
@@ -240,7 +240,7 @@ function ResultBlock({ item, cardWidth }: { item: ResultItem; cardWidth: number 
 function NewsCard({ item, width }: { item: NewsItem; width: number }) {
   const d = item.publishedAt || item.createdAt;
   const when = d ? new Date(d) : undefined;
-  const img = item.banner || item.image;
+  const img = item.banner;
   return (
     <View style={[styles.newsCard, { width }]}>
       <View style={styles.newsImageWrap}>
@@ -342,7 +342,18 @@ export default function HomeTab() {
         </Section>
 
         {/* Upcoming */}
-        <Section title="📅 Upcoming Events">
+        <Section
+          title="📅 Upcoming Events"
+          right={
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/racing", params: { tab: "Racing Schedule" } })
+              }
+            >
+              <Text style={styles.viewAll}>View All →</Text>
+            </Pressable>
+          }
+        >
           <View style={styles.card}>
             <View style={{ gap: SP }}>
               {miniUpcoming.length
@@ -353,7 +364,18 @@ export default function HomeTab() {
         </Section>
 
         {/* Players */}
-        <Section title="🏆 Top Players">
+        <Section
+          title="🏆 Top Players"
+          right={
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/people", params: { tab: "Wins" } })
+              }
+            >
+              <Text style={styles.viewAll}>View All →</Text>
+            </Pressable>
+          }
+        >
           <View style={styles.playersRow}>
             {players.length
               ? players.map((p, i) => <PlayerCard key={String(p.player || i)} player={p} index={i} />)
@@ -365,7 +387,11 @@ export default function HomeTab() {
         <Section
           title="🏁 Latest Race Results"
           right={
-            <Pressable onPress={() => router.push("/results" as any)}>
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/racing", params: { tab: "Results" } })
+              }
+            >
               <Text style={styles.viewAll}>View All →</Text>
             </Pressable>
           }
@@ -391,7 +417,11 @@ export default function HomeTab() {
         <Section
           title="📰 Latest News"
           right={
-            <Pressable onPress={() => router.push("/media" as any)}>
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/media", params: { tab: "news" } })
+              }
+            >
               <Text style={styles.viewAll}>View All →</Text>
             </Pressable>
           }
@@ -412,6 +442,7 @@ export default function HomeTab() {
             <Text style={{ color: "#9aa" }}>No news yet.</Text>
           )}
         </Section>
+
       </ScrollView>
     </SafeScreen>
   );

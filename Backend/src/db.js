@@ -1,6 +1,11 @@
-import mongoose from 'mongoose';
-export async function connectDB(uri) {
-  mongoose.set('strictQuery', true);
-  await mongoose.connect(uri);
-  console.log('✅ Mongo connected');
-}
+import mongoose from "mongoose";
+
+export const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, { dbName: "slrh" });
+    console.log("✅ MongoDB connected");
+  } catch (err) {
+    console.error("❌ DB connection error:", err.message);
+    process.exit(1);
+  }
+};
