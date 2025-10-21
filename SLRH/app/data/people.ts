@@ -8,33 +8,92 @@ export type DriverItem = {
   ride: string;
   stats?: string;
   avatar?: string | ImageSourcePropType;
+  profile?: {
+    vehicleType?: string;
+    club?: string;
+    nationality?: string;
+    age?: number;
+    rating?: number;
+    reviewsCount?: number;
+    stats?: {
+      races?: number;
+      trophies?: number;
+      firstPlaces?: number;
+      prizeMoneyLKR?: number;
+      winRate?: number;
+      avgPrizePerRace?: number;
+    };
+    personal?: { dob?: string; contact?: string; address?: string };
+    team?: string;
+    sponsors?: string[];
+    license?: { serial?: string; issueDate?: string; dueDate?: string };
+    highlights?: string[];
+    achievements?: string[];
+  };
 };
 
 export type TeamItem = {
   id: string;
   name: string;
-  members: string[];               // names for now (can switch to ids later)
+  members: string[];
   achievements?: string;
   logo?: string | ImageSourcePropType;
 };
 
 export type FameItem = {
   id: string;
-  title: string;                   // e.g., "Lifetime Achievement"
-  person: string;                  // name
+  title: string;
+  person: string;
   year: number;
   blurb?: string;
   avatar?: string | ImageSourcePropType;
 };
 
-/* ---------- Seed data (sample) ---------- */
+/* ---------- Seed Data ---------- */
 export const DRIVERS: DriverItem[] = [
-{
+  {
     id: "kumudu-rathnayaka",
     name: "Kumudu Rathnayaka",
     ride: "Honda CBR250R",
     stats: "Wins: 5",
     avatar: require("../../assets/players/kumudu.jpg"),
+    profile: {
+      vehicleType: "Motorcycle",
+      club: "Colombo Riders Club",
+      nationality: "Sri Lankan",
+      age: 29,
+      rating: 4.8,
+      reviewsCount: 42,
+      stats: {
+        races: 58,
+        trophies: 15,
+        firstPlaces: 5,
+        prizeMoneyLKR: 1250000,
+        winRate: 0.26,
+        avgPrizePerRace: 21500,
+      },
+      personal: {
+        dob: "1996-04-15",
+        contact: "+94 77 123 4567",
+        address: "Kandy, Sri Lanka",
+      },
+      team: "Thunder Riders",
+      sponsors: ["Motul Oil", "Yamaha Lanka", "Red Bull"],
+      license: {
+        serial: "SLR-R-2023-105",
+        issueDate: "2023-03-10",
+        dueDate: "2025-03-10",
+      },
+      highlights: [
+        "Fastest lap at Colombo Street Race 2024",
+        "Represented Sri Lanka Motorsport Federation 2023",
+      ],
+      achievements: [
+        "🏆 1st place – Kandy Circuit Race 2023",
+        "🥈 2nd place – Negombo Speed Fest 2022",
+        "🏁 Completed 50 official races",
+      ],
+    },
   },
   {
     id: "manel-gunasekara",
@@ -42,6 +101,42 @@ export const DRIVERS: DriverItem[] = [
     ride: "Honda CBR250R",
     stats: "Wins: 5",
     avatar: require("../../assets/players/manel.jpg"),
+    profile: {
+      vehicleType: "Motorcycle",
+      club: "Southern Racing League",
+      nationality: "Sri Lankan",
+      age: 27,
+      rating: 4.6,
+      reviewsCount: 28,
+      stats: {
+        races: 45,
+        trophies: 10,
+        firstPlaces: 4,
+        prizeMoneyLKR: 940000,
+        winRate: 0.22,
+        avgPrizePerRace: 20900,
+      },
+      personal: {
+        dob: "1998-11-02",
+        contact: "+94 71 456 7890",
+        address: "Galle, Sri Lanka",
+      },
+      team: "Southern Speedsters",
+      sponsors: ["Shell Lanka", "Honda", "SLT Mobitel"],
+      license: {
+        serial: "SLR-R-2023-210",
+        issueDate: "2023-04-02",
+        dueDate: "2025-04-02",
+      },
+      highlights: [
+        "Dominated the Southern GP 2024",
+        "Best Female Racer Nominee – 2023 Awards",
+      ],
+      achievements: [
+        "🥇 1st place – Galle Speedway 2024",
+        "🏁 2nd place – Southern Circuit 2023",
+      ],
+    },
   },
   {
     id: "d1",
@@ -49,6 +144,42 @@ export const DRIVERS: DriverItem[] = [
     ride: "Yamaha R15",
     stats: "Top Speed: 146 km/h",
     avatar: require("../../assets/people/drivers/perera.jpg"),
+    profile: {
+      vehicleType: "Motorcycle",
+      club: "Thunder Riders",
+      nationality: "Sri Lankan",
+      age: 31,
+      rating: 4.9,
+      reviewsCount: 51,
+      stats: {
+        races: 73,
+        trophies: 22,
+        firstPlaces: 9,
+        prizeMoneyLKR: 1780000,
+        winRate: 0.31,
+        avgPrizePerRace: 24380,
+      },
+      personal: {
+        dob: "1994-09-05",
+        contact: "+94 76 555 9911",
+        address: "Colombo, Sri Lanka",
+      },
+      team: "Thunder Riders",
+      sponsors: ["Red Bull", "Yamaha Lanka", "Dialog"],
+      license: {
+        serial: "SLR-R-2022-001",
+        issueDate: "2022-05-01",
+        dueDate: "2024-05-01",
+      },
+      highlights: [
+        "Podium finish at Colombo GP 2023",
+        "Fastest acceleration record at Negombo Street Race",
+      ],
+      achievements: [
+        "🏆 1st place – Colombo GP 2023",
+        "🥉 3rd place – Nuwara Circuit 2022",
+      ],
+    },
   },
   {
     id: "d2",
@@ -56,6 +187,42 @@ export const DRIVERS: DriverItem[] = [
     ride: "Honda CBR250R",
     stats: "Wins: 5",
     avatar: require("../../assets/people/drivers/fernando.jpg"),
+    profile: {
+      vehicleType: "Motorcycle",
+      club: "Colombo Speedsters",
+      nationality: "Sri Lankan",
+      age: 30,
+      rating: 4.5,
+      reviewsCount: 38,
+      stats: {
+        races: 60,
+        trophies: 14,
+        firstPlaces: 6,
+        prizeMoneyLKR: 1150000,
+        winRate: 0.25,
+        avgPrizePerRace: 19100,
+      },
+      personal: {
+        dob: "1995-06-18",
+        contact: "+94 70 888 2233",
+        address: "Negombo, Sri Lanka",
+      },
+      team: "Colombo Speedsters",
+      sponsors: ["Honda Lanka", "PickMe", "Eicher Oil"],
+      license: {
+        serial: "SLR-R-2023-087",
+        issueDate: "2023-02-22",
+        dueDate: "2025-02-22",
+      },
+      highlights: [
+        "Runner-up – Colombo GP 2023",
+        "Fastest cornering lap – 2022 Nuwara Circuit",
+      ],
+      achievements: [
+        "🥇 1st place – Negombo Speedway 2023",
+        "🥈 2nd place – Kandy Mountain Rally 2024",
+      ],
+    },
   },
   {
     id: "d3",
@@ -63,9 +230,46 @@ export const DRIVERS: DriverItem[] = [
     ride: "Suzuki Gixxer SF",
     stats: "Best Lap: 1:12.32",
     avatar: require("../../assets/people/drivers/jayasinghe.jpg"),
+    profile: {
+      vehicleType: "Motorcycle",
+      club: "Thunder Riders",
+      nationality: "Sri Lankan",
+      age: 25,
+      rating: 4.3,
+      reviewsCount: 19,
+      stats: {
+        races: 32,
+        trophies: 7,
+        firstPlaces: 2,
+        prizeMoneyLKR: 670000,
+        winRate: 0.18,
+        avgPrizePerRace: 20900,
+      },
+      personal: {
+        dob: "2000-08-10",
+        contact: "+94 72 444 1188",
+        address: "Matara, Sri Lanka",
+      },
+      team: "Thunder Riders",
+      sponsors: ["Suzuki Motors", "SLR Helmets"],
+      license: {
+        serial: "SLR-R-2024-099",
+        issueDate: "2024-03-01",
+        dueDate: "2026-03-01",
+      },
+      highlights: [
+        "Youngest podium finisher in 2024 season",
+        "Consistent top 5 in hill climb events",
+      ],
+      achievements: [
+        "🥇 1st place – Kandy Hill Climb 2024",
+        "🏁 3rd place – Colombo Circuit 2023",
+      ],
+    },
   },
 ];
 
+/* ---------- Teams ---------- */
 export const TEAMS: TeamItem[] = [
   {
     id: "t1",
@@ -83,6 +287,7 @@ export const TEAMS: TeamItem[] = [
   },
 ];
 
+/* ---------- Fame ---------- */
 export const FAME: FameItem[] = [
   {
     id: "h1",
@@ -101,7 +306,7 @@ export const FAME: FameItem[] = [
   },
 ];
 
-/* ---------- Accessor ---------- */
+/* ---------- Accessor Functions ---------- */
 export function getPeopleData() {
   return {
     drivers: DRIVERS,
@@ -112,9 +317,10 @@ export function getPeopleData() {
 
 export function getDriverById(id: string) {
   const { drivers } = getPeopleData();
-  return drivers.find(d => d.id === id);
+  return drivers.find((d) => d.id === id);
 }
+
 export function getTeamById(id: string) {
   const { teams } = getPeopleData();
-  return teams.find(t => t.id === id);
+  return teams.find((t) => t.id === id);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   View,
@@ -9,525 +9,508 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   ImageSourcePropType,
 } from "react-native";
 import { Link, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import SafeScreen from "../../components/SafeScreen";
 import TopBar from "../../components/TopBar";
-import { getHomeData } from "../data/home";
-import type { EventItem, PlayerItem, NewsItem } from "../data/home";
+import { getUpcomingEvents, getResults, type Event } from "../data/events";
+import { getPeopleData } from "../data/people";
+import { getNews, type NewsItem } from "../data/media"; // ✅ now fetching from media.ts
 
-/* Types for results (seeded or derived) */
-type ResultItem = {
-  _id: string;
-  slug?: string;
-  title: string;
-  city?: string;
-  occurredAt: string;
-  banner?: string | ImageSourcePropType;
-  topFinishers?: Array<{ place: 1 | 2 | 3; name: string; avatar?: string | ImageSourcePropType }>;
+const SP = 14;
+const BG = "#0b0b0b";
+const SCREEN_W = Dimensions.get("window").width;
+
+const asImageSource = (src?: string | ImageSourcePropType) => {
+  if (!src) return require("../../assets/races/colombo.jpg");
+  return typeof src === "string" ? { uri: src } : (src as ImageSourcePropType);
 };
 
-/* -------------------- UI constants -------------------- */
-const SP = 14;         // base spacing
-const R = 16;          // radius
-const BG = "#0b0b0b";
-const CARD_BG = "#121212";
-const BORDER = "rgba(255,255,255,0.06)";
-
-/* -------------------- helpers -------------------- */
-function toEventDate(e: EventItem): Date | undefined {
-  if (e.scheduledDateTime) return new Date(e.scheduledDateTime);
-  if (e.dateUtc) return new Date(e.dateUtc);
-  if (e.date) {
-    const d = e.date.split("T")[0];
-    const t = e.startTime || "00:00";
-    return new Date(`${d}T${t}:00Z`);
-  }
-  return undefined;
-}
-function fmtDateTime(d?: Date) {
-  if (!d) return { date: "", time: "" };
-  return {
-    date: d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }),
-    time: d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
-  };
-}
-const asImageSource = (src?: string | ImageSourcePropType) =>
-  typeof src === "string" ? { uri: src } : (src as ImageSourcePropType);
-
-/* -------------------- countdown -------------------- */
-function computeRemaining(target: Date) {
-  const diff = +target - +new Date();
-  if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0 };
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff / 3600000) % 24);
-  const m = Math.floor((diff / 60000) % 60);
-  const s = Math.floor((diff / 1000) % 60);
-  return { d, h, m, s };
-}
-function CountdownTimer({ targetDate }: { targetDate: Date }) {
-  const [t, setT] = useState(() => computeRemaining(targetDate));
-  useEffect(() => {
-    const id = setInterval(() => setT(computeRemaining(targetDate)), 1000);
-    return () => clearInterval(id);
-  }, [targetDate]);
-  const B = ({ v, label }: { v: number; label: string }) => (
-    <View style={styles.countBlock}>
-      <Text style={styles.countValue}>{String(v).padStart(2, "0")}</Text>
-      <Text style={styles.countLabel}>{label}</Text>
-    </View>
-  );
+/* -------------------- Hero Section -------------------- */
+function HeroSlide({ event }: { event: Event }) {
+  const id = event.id;
+  const when = new Date(event.scheduledAt);
   return (
-    <View style={styles.countRow}>
-      <B v={t.d} label="Days" />
-      <B v={t.h} label="Hours" />
-      <B v={t.m} label="Minutes" />
-      <B v={t.s} label="Seconds" />
-    </View>
-  );
-}
-
-/* -------------------- hero carousel -------------------- */
-const SCREEN_W = Dimensions.get("window").width;
-const CARD_W = Math.max(300, SCREEN_W - SP * 2);
-const HERO_W = Math.max(280, SCREEN_W - SP * 2);
-const HERO_H = Math.min(260, Math.round((HERO_W * 9) / 16));
-const AUTOPLAY_MS = 4000;
-
-function HeroSlide({ event }: { event: EventItem }) {
-  const id = String(event.slug ?? event._id);
-  const when = toEventDate(event);
-  const { date, time } = fmtDateTime(when);
-  const title = event.title || event.name || "Race";
-  const city = event.location?.city || event.city;
-  const img = event.heroImage || event.banner || event.image;
-
-  return (
-    <View style={[styles.heroCard, { width: HERO_W, height: HERO_H }]}>
-      <Image source={asImageSource(img)} style={styles.heroImage} />
-      <View style={styles.heroOverlay} />
-      <View style={styles.heroTextWrap}>
-        <Text style={[styles.heroTitle]} numberOfLines={2}>{title}</Text>
-        <Text style={styles.heroMeta}>
-          {city ? `${city}  •  ` : ""}{date}{date && time ? "  ·  " : ""}{time}
-        </Text>
-        {when && <CountdownTimer targetDate={when} />}
-        <Link href={{ pathname: "/racing/[id]", params: { id } }} asChild>
-          <Pressable style={styles.heroCTA}><Text style={styles.heroCTAText}>View Event →</Text></Pressable>
-        </Link>
-      </View>
-    </View>
-  );
-}
-
-function HeroCarousel({ data }: { data: EventItem[] }) {
-  const listRef = useRef<FlatList<EventItem>>(null);
-  useEffect(() => {
-    if (data.length <= 1) return;
-    const id = setInterval(() => {
-      listRef.current?.scrollToIndex({
-        index: (Math.round(Date.now() / AUTOPLAY_MS) + 1) % data.length,
-        animated: true,
-      });
-    }, AUTOPLAY_MS);
-    return () => clearInterval(id);
-  }, [data.length]);
-
-  return (
-    <FlatList
-      ref={listRef}
-      data={data}
-      keyExtractor={(it) => String(it._id)}
-      renderItem={({ item }) => <HeroSlide event={item} />}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      getItemLayout={(_, i) => ({ length: HERO_W, offset: HERO_W * i, index: i })}
-      style={{ height: HERO_H }}
-      contentContainerStyle={{ columnGap: SP, paddingRight: SP }}
-      scrollEventThrottle={16}
-      nestedScrollEnabled
-      decelerationRate="fast"
-    />
-  );
-}
-
-/* -------------------- mini event & players -------------------- */
-function MiniEvent({ item }: { item: EventItem }) {
-  const id = String(item.slug ?? item._id);
-  const when = toEventDate(item);
-  return (
-    <Link href={{ pathname: "../race/[id]", params: { id } }} asChild>
-      <Pressable style={styles.miniCard}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.miniTitle} numberOfLines={1}>{item.title || item.name}</Text>
-          <Text style={styles.miniMeta} numberOfLines={1}>
-            {(item.location?.city || item.city || "") + (when ? `  •  ${when.toLocaleDateString()}` : "")}
+    <Link href={{ pathname: "/racing/[id]", params: { id } }} asChild>
+      <Pressable style={styles.heroCard}>
+        <Image source={asImageSource(event.banner)} style={styles.heroImage} />
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.9)"]}
+          style={styles.heroOverlay}
+        />
+        <View style={styles.heroTextWrap}>
+          <View style={styles.liveBadge}>
+            <Text style={styles.liveBadgeText}>UPCOMING</Text>
+          </View>
+          <Text style={styles.heroTitle}>{event.title}</Text>
+          <Text style={styles.heroMeta}>
+            📍 {event.city} • 📅 {when.toLocaleDateString()}
           </Text>
-        </View>
-      </Pressable>
-    </Link>
-  );
-}
-function PlayerCard({ player, index }: { player: PlayerItem; index: number }) {
-  const profile = player.playerDoc?.profilePicture || player.profilePicture;
-  const name = player.playerName || player.playerDoc?.name || "Player";
-  let subtitle = "Top performer";
-  if (player.playerDoc?.bestAchievement) {
-    try { const j = JSON.parse(player.playerDoc.bestAchievement); subtitle = Array.isArray(j) ? j[0] : String(j); }
-    catch { subtitle = player.playerDoc.bestAchievement!; }
-  }
-  const playerId = player.player || player.playerDoc?._id;
-  return (
-    <Link href={playerId ? ({ pathname: "../player/[id]", params: { id: String(playerId) } } as any) : "/"} asChild>
-      <Pressable style={styles.playerCard}>
-        <Image source={asImageSource(profile)} style={styles.playerImg} />
-        <View style={{ marginTop: 8 }}>
-          <Text style={styles.playerSubtitle} numberOfLines={1}>{subtitle}</Text>
-          <Text style={styles.playerName} numberOfLines={1}>{name}</Text>
-        </View>
-        <View style={styles.badge}><Text style={styles.badgeText}>{index + 1}</Text></View>
-      </Pressable>
-    </Link>
-  );
-}
-
-/* -------------------- results -------------------- */
-function ResultCard({ item, cardWidth }: { item: ResultItem; cardWidth: number }) {
-  const d = new Date(item.occurredAt);
-  return (
-    <View style={[styles.resultCard, { width: cardWidth }]}>
-      <Image source={asImageSource(item.banner)} style={styles.resultImg} />
-      <View style={styles.resultShade} />
-      <View style={styles.resultInner}>
-        <Text style={styles.resultTitle} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.resultMeta} numberOfLines={1}>
-          {item.city ? `📍 ${item.city}   ` : ""}📅 {d.toLocaleDateString()}
-        </Text>
-      </View>
-      <Link asChild href={{ pathname: "../race/[id]", params: { id: String(item.slug ?? item._id) } }}>
-        <Pressable style={StyleSheet.absoluteFill as any} />
-      </Link>
-    </View>
-  );
-}
-function ResultBlock({ item, cardWidth }: { item: ResultItem; cardWidth: number }) {
-  return (
-    <View style={{ width: cardWidth }}>
-      <ResultCard item={item} cardWidth={cardWidth} />
-      {item.topFinishers?.length ? (
-        <View style={{ gap: 8, marginTop: SP }}>
-          {item.topFinishers.slice(0, 3).map((f) => (
-            <View key={f.name + f.place} style={styles.finisherRow}>
-              <Text style={{ width: 22, textAlign: "center" }}>
-                {f.place === 1 ? "🥇" : f.place === 2 ? "🥈" : "🥉"}
-              </Text>
-              {f.avatar ? <Image source={asImageSource(f.avatar)} style={styles.finisherImg} /> :
-                <View style={[styles.finisherImg, { backgroundColor: "#222" }]} />}
-              <Text style={styles.finisherName} numberOfLines={1}>{f.name}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-/* -------------------- news -------------------- */
-function NewsCard({ item, width }: { item: NewsItem; width: number }) {
-  const d = item.publishedAt || item.createdAt;
-  const when = d ? new Date(d) : undefined;
-  const img = item.banner;
-  return (
-    <View style={[styles.newsCard, { width }]}>
-      <View style={styles.newsImageWrap}>
-        <Image source={asImageSource(img)} style={styles.newsImage} />
-        <View style={styles.newsShade} />
-        <View style={styles.newsHeader}>
-          <Text style={styles.newsTitle} numberOfLines={1}>{item.title}</Text>
-          <View style={styles.newsMetaRow}>
-            <Text style={styles.newsMeta}>📅 {when ? when.toLocaleDateString() : ""}</Text>
-            {!!item.category && <View style={styles.newsBadge}><Text style={styles.newsBadgeText}>{item.category}</Text></View>}
+          <View style={styles.heroCTABtn}>
+            <Text style={styles.heroCTA}>View Event →</Text>
           </View>
         </View>
-      </View>
-      <View style={styles.newsFooter}>
-        <Text style={styles.newsExcerpt} numberOfLines={2}>{item.excerpt || ""}</Text>
-      </View>
-    </View>
+      </Pressable>
+    </Link>
   );
 }
 
-/* -------------------- Section wrapper -------------------- */
-function Section({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
+/* -------------------- News Card -------------------- */
+function NewsCard({ item }: { item: NewsItem }) {
+  const when = new Date(); 
   return (
-    <View style={styles.sectionBox}>
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {right}
-      </View>
-      {children}
-    </View>
+    <Link href={{ pathname: "/media", params: { tab: "News", id: item._id } }} asChild>
+      <Pressable style={styles.newsCard}>
+        <View style={styles.newsImgWrap}>
+          <Image source={asImageSource(item.banner)} style={styles.newsImg} />
+          <View style={styles.newsOverlay} />
+        </View>
+        <View style={styles.newsContent}>
+          <Text style={styles.newsTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+          <Text style={styles.newsMeta}>📅 {when?.toLocaleDateString()}</Text>
+        </View>
+      </Pressable>
+    </Link>
   );
 }
 
-/* -------------------- Screen -------------------- */
-export default function HomeTab() {
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [players, setPlayers] = useState<PlayerItem[]>([]);
-  const [results, setResults] = useState<ResultItem[]>([]);
+/* -------------------- Home Screen -------------------- */
+export default function HomeScreen() {
+  const router = useRouter();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
-  const load = () => {
-    setLoading(true);
+  const heroEvents = useMemo(() => getUpcomingEvents(5), []);
+  const latestResults = useMemo(() => getResults().slice(0, 6), []);
+  const { drivers, teams } = getPeopleData();
+
+  // 🏆 top drivers and featured teams
+  const topDrivers = useMemo(() => {
+    return drivers
+      .map((d) => ({
+        ...d,
+        winCount: parseInt(d.stats?.match(/\d+/)?.[0] || "0", 10),
+      }))
+      .sort((a, b) => b.winCount - a.winCount)
+      .slice(0, 5);
+  }, [drivers]);
+
+  const featuredTeams = useMemo(() => {
+    return teams
+      .map((t) => ({
+        ...t,
+        memberCount: t.members?.length || 0,
+      }))
+      .sort((a, b) => b.memberCount - a.memberCount)
+      .slice(0, 4);
+  }, [teams]);
+
+  // ✅ fetch latest news from media.ts
+  const loadNews = async () => {
     try {
-      const data = getHomeData() as any;
-      const evts: EventItem[] = data.events || [];
-      setEvents(evts);
-      setPlayers(data.players || []);
-      setNews(data.news || []);
-
-      const seeded: ResultItem[] = Array.isArray(data.results) ? data.results : [];
-      const fromEvents = (list: EventItem[]): ResultItem[] =>
-        list.filter((e) => !!toEventDate(e))
-            .sort((a, b) => +toEventDate(b)! - +toEventDate(a)!)
-            .slice(0, 5)
-            .map((e): ResultItem => ({
-              _id: `res-${e._id}`,
-              title: e.title || (e as any).name || "Race",
-              city: e.city || (e as any).location?.city,
-              occurredAt: (toEventDate(e) || new Date()).toISOString(),
-              banner: e.heroImage || (e as any).banner || (e as any).image,
-              topFinishers: [],
-            }));
-      setResults(
-        seeded.length
-          ? seeded.slice().sort((a, b) => +new Date(b.occurredAt) - +new Date(a.occurredAt))
-          : fromEvents(evts)
-      );
+      setLoading(true);
+      const fetched = await getNews();
+      setNews(fetched);
+    } catch (err) {
+      console.warn("Failed to load news:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
-
-  const upcomingSorted = useMemo(() => {
-    const withDate = events.filter((e) => !!toEventDate(e)).sort((a, b) => +toEventDate(a)! - +toEventDate(b)!);
-    const now = new Date();
-    const future = withDate.filter((e) => +toEventDate(e)! >= +now);
-    return future.length ? future : withDate.slice(-3);
-  }, [events]);
-  const miniUpcoming = useMemo(() => upcomingSorted.slice(1, 4), [upcomingSorted]);
-
-  const RESULT_W = CARD_W;
-  const NEWS_W = CARD_W;
+  useEffect(() => {
+    loadNews();
+  }, []);
 
   return (
     <SafeScreen bg={BG}>
       <TopBar title="Home" />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: SP, paddingBottom: 88 }} // extra bottom so it clears the tab bar
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#fff" />}
+        contentContainerStyle={{ padding: SP, paddingBottom: 88 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={loadNews}
+            tintColor="#00E0C6"
+          />
+        }
       >
-        {/* HERO */}
-        <Section title=" ">
-          <HeroCarousel data={upcomingSorted} />
-        </Section>
+        {/* Hero Slide */}
+        <View style={{ marginBottom: 32 }}>
+          <FlatList
+            data={heroEvents}
+            keyExtractor={(it) => String(it.id)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={SCREEN_W * 0.8 + 12}
+            decelerationRate="fast"
+            contentContainerStyle={{ columnGap: 12 }}
+            renderItem={({ item }) => <HeroSlide event={item} />}
+          />
+        </View>
 
-        {/* Upcoming */}
+        {/* 🏁 Featured Teams */}
         <Section
-          title="📅 Upcoming Events"
-          right={
-            <Pressable
-              onPress={() =>
-                router.push({ pathname: "/racing", params: { tab: "Racing Schedule" } })
-              }
-            >
-              <Text style={styles.viewAll}>View All →</Text>
-            </Pressable>
+          title="Featured Teams"
+          onPress={() =>
+            router.push({ pathname: "/people", params: { tab: "Teams" } })
           }
         >
-          <View style={styles.card}>
-            <View style={{ gap: SP }}>
-              {miniUpcoming.length
-                ? miniUpcoming.map((e) => <MiniEvent key={e._id} item={e} />)
-                : <Text style={{ color: "#9aa" }}>Nothing to show.</Text>}
-            </View>
-          </View>
+          <FlatList
+            data={featuredTeams}
+            keyExtractor={(t) => String(t.id)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ columnGap: 12 }}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/people/team/[id]",
+                    params: { id: item.id },
+                  })
+                }
+                style={styles.teamCard}
+              >
+                <View style={styles.teamImgWrap}>
+                  <Image
+                    source={asImageSource(item.logo)}
+                    style={styles.teamImg}
+                  />
+                </View>
+                <Text style={styles.teamName}>{item.name}</Text>
+                <View style={styles.memberBadge}>
+                  <Text style={styles.memberBadgeText}>
+                    {item.members.length} Members
+                  </Text>
+                </View>
+              </Pressable>
+            )}
+          />
         </Section>
 
-        {/* Players */}
+        {/* 🏎️ Top Players */}
         <Section
-          title="🏆 Top Players"
-          right={
-            <Pressable
-              onPress={() =>
-                router.push({ pathname: "/people", params: { tab: "Wins" } })
-              }
-            >
-              <Text style={styles.viewAll}>View All →</Text>
-            </Pressable>
+          title="Top Players"
+          onPress={() =>
+            router.push({ pathname: "/people", params: { tab: "Drivers" } })
           }
         >
-          <View style={styles.playersRow}>
-            {players.length
-              ? players.map((p, i) => <PlayerCard key={String(p.player || i)} player={p} index={i} />)
-              : <Text style={{ color: "#9aa" }}>No players yet.</Text>}
-          </View>
+          <FlatList
+            data={topDrivers}
+            keyExtractor={(d) => String(d.id)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ columnGap: 12 }}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/people/driver/[id]",
+                    params: { id: item.id },
+                  })
+                }
+                style={styles.playerCard}
+              >
+                <View style={styles.playerImgWrap}>
+                  <Image
+                    source={asImageSource(item.avatar)}
+                    style={styles.playerImg}
+                  />
+                  <View style={styles.rankBadge}>
+                    <Text style={styles.rankText}>🏆</Text>
+                  </View>
+                </View>
+                <Text style={styles.playerName}>{item.name}</Text>
+                <Text style={styles.playerStats}>{item.stats}</Text>
+              </Pressable>
+            )}
+          />
         </Section>
 
-        {/* Results */}
+        {/* 🏁 Latest Race Results */}
         <Section
-          title="🏁 Latest Race Results"
-          right={
-            <Pressable
-              onPress={() =>
-                router.push({ pathname: "/racing", params: { tab: "Results" } })
-              }
-            >
-              <Text style={styles.viewAll}>View All →</Text>
-            </Pressable>
+          title="Latest Results"
+          onPress={() =>
+            router.push({ pathname: "/racing", params: { tab: "results" } })
           }
         >
-          {results.length ? (
-            <FlatList
-              data={results.slice(0, 6)}
-              keyExtractor={(it) => String(it._id)}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ columnGap: SP, paddingRight: SP }}
-              snapToInterval={RESULT_W + SP}
-              decelerationRate="fast"
-              snapToAlignment="start"
-              renderItem={({ item }) => <ResultBlock item={item} cardWidth={RESULT_W} />}
-            />
-          ) : (
-            <Text style={{ color: "#9aa" }}>No past results yet.</Text>
-          )}
+          <FlatList
+            data={latestResults}
+            keyExtractor={(it) => String(it.id)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ columnGap: 12 }}
+            renderItem={({ item }) => {
+              const top3 = item.podium?.slice(0, 3) || [];
+              const date = new Date(item.occurredAt);
+              return (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: "/racing/result/[id]",
+                      params: { id: String(item.id) },
+                    })
+                  }
+                  style={({ pressed }) => [
+                    styles.resultCard,
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                  ]}
+                >
+                  <Image
+                    source={asImageSource(item.banner)}
+                    style={styles.resultImg}
+                  />
+                  <View style={styles.resultTextWrap}>
+                    <Text style={styles.resultTitle}>{item.title}</Text>
+                    <Text style={styles.resultMeta}>
+                      📅 {date.toLocaleDateString()}
+                    </Text>
+                    {top3.length > 0 && (
+                      <View style={styles.podiumWrap}>
+                        {top3.map((p, i) => (
+                          <View key={i} style={styles.podiumItem}>
+                            <Text style={styles.podiumIcon}>
+                              {p.place === 1
+                                ? "🥇"
+                                : p.place === 2
+                                ? "🥈"
+                                : "🥉"}
+                            </Text>
+                            <Text style={styles.podiumText}>{p.name}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            }}
+          />
         </Section>
 
-        {/* News */}
+        {/* 📰 Latest News */}
         <Section
-          title="📰 Latest News"
-          right={
-            <Pressable
-              onPress={() =>
-                router.push({ pathname: "/media", params: { tab: "news" } })
-              }
-            >
-              <Text style={styles.viewAll}>View All →</Text>
-            </Pressable>
+          title="Latest News"
+          onPress={() =>
+            router.push({ pathname: "/media", params: { tab: "News" } })
           }
         >
-          {news.length ? (
-            <FlatList
-              data={news.slice(0, 9)}
-              keyExtractor={(it) => String(it._id)}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ columnGap: SP, paddingRight: SP }}
-              snapToInterval={NEWS_W + SP}
-              decelerationRate="fast"
-              snapToAlignment="start"
-              renderItem={({ item }) => <NewsCard item={item} width={NEWS_W} />}
-            />
-          ) : (
-            <Text style={{ color: "#9aa" }}>No news yet.</Text>
-          )}
+          <FlatList
+            data={news.slice(0, 5)}
+            keyExtractor={(n) => String(n._id)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ columnGap: 12 }}
+            renderItem={({ item }) => <NewsCard item={item} />}
+          />
         </Section>
-
       </ScrollView>
     </SafeScreen>
   );
 }
 
-/* -------------------- styles -------------------- */
+/* ---------- Small helper section wrapper ---------- */
+function Section({
+  title,
+  onPress,
+  children,
+}: {
+  title: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.sectionBox}>
+      <View style={styles.sectionHead}>
+        <View>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          <View style={styles.sectionUnderline} />
+        </View>
+        <Pressable onPress={onPress} style={styles.viewAllBtn}>
+          <Text style={styles.viewAll}>View All →</Text>
+        </Pressable>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+/* -------------------- Styles -------------------- */
 const styles = StyleSheet.create({
-  /* sections */
-  sectionBox: {
-    marginBottom: SP, // consistent gap between sections
+  heroCard: {
+    width: SCREEN_W * 0.85,
+    height: 220,
+    borderRadius: 20,
+    overflow: "hidden",
+    position: "relative",
+    elevation: 8,
+    shadowColor: "#00E0C6",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
-  sectionHead: {
-    paddingHorizontal: 2,
+  heroImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  heroOverlay: { ...StyleSheet.absoluteFillObject },
+  heroTextWrap: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16 },
+  liveBadge: {
+    backgroundColor: "#00E0C6",
+    paddingHorizontal: 10,
     paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: "flex-start",
     marginBottom: 8,
+  },
+  liveBadgeText: { color: "#000", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
+  heroTitle: { color: "#fff", fontSize: 22, fontWeight: "900", marginBottom: 4 },
+  heroMeta: { color: "#ddd", fontSize: 13, marginBottom: 8 },
+  heroCTABtn: {
+    backgroundColor: "rgba(0, 224, 198, 0.2)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#00E0C6",
+    alignSelf: "flex-start",
+  },
+  heroCTA: { color: "#00E0C6", fontWeight: "800", fontSize: 14 },
+
+  sectionBox: { marginBottom: 32 },
+  sectionHead: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "baseline",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "900" },
-  viewAll: { color: "#00FFFC", fontWeight: "800" },
+  sectionTitle: { color: "#fff", fontSize: 22, fontWeight: "900", letterSpacing: -0.5 },
+  sectionUnderline: {
+    width: 40,
+    height: 3,
+    backgroundColor: "#00E0C6",
+    borderRadius: 2,
+    marginTop: 4,
+  },
+  viewAllBtn: {
+    backgroundColor: "rgba(0, 224, 198, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  viewAll: { color: "#00E0C6", fontWeight: "700", fontSize: 13 },
 
-  /* hero */
-  heroCard: {
-    borderRadius: R,
-    overflow: "hidden",
-    backgroundColor: CARD_BG,
+  teamCard: {
+    alignItems: "center",
+    width: 130,
+    backgroundColor: "#1a1a1a",
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#222",
   },
-  heroImage: { width: "100%", height: "100%" },
-  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.25)" },
-  heroTextWrap: {
+  teamImgWrap: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: "#111",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: "#333",
+  },
+  teamImg: { width: 70, height: 70, borderRadius: 8 },
+  teamName: { color: "#fff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  memberBadge: {
+    backgroundColor: "#00E0C6",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 6,
+  },
+  memberBadgeText: { color: "#000", fontSize: 11, fontWeight: "700" },
+
+  playerCard: {
+    alignItems: "center",
+    width: 110,
+    backgroundColor: "#1a1a1a",
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  playerImgWrap: { position: "relative", marginBottom: 8 },
+  playerImg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: "#00E0C6",
+  },
+  rankBadge: {
     position: "absolute",
-    left: 12, right: 12, bottom: 12,
-    padding: 12, borderRadius: 12, backgroundColor: "rgba(0,0,0,0.35)",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#00E0C6",
   },
-  heroTitle: { color: "#fff", fontSize: 22, fontWeight: "900" },
-  heroMeta: { color: "#eaeaea", marginTop: 2, marginBottom: 8 },
-  heroCTA: { alignSelf: "flex-start", paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, backgroundColor: "#7e5bef" },
-  heroCTAText: { color: "#fff", fontWeight: "700" },
+  rankText: { fontSize: 12 },
+  playerName: { color: "#fff", fontWeight: "700", fontSize: 13, textAlign: "center" },
+  playerStats: { color: "#00E0C6", fontSize: 11, marginTop: 4, fontWeight: "600" },
 
-  /* countdown */
-  countRow: { flexDirection: "row", justifyContent: "space-between", gap: 6, marginBottom: 10 },
-  countBlock: { alignItems: "center", width: 62, paddingVertical: 6, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 12 },
-  countValue: { color: "#fff", fontSize: 20, fontWeight: "800" },
-  countLabel: { color: "#c9c9c9", fontSize: 10, marginTop: 2 },
+  resultCard: {
+    width: 260,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  resultImg: { width: "100%", height: 130, resizeMode: "cover" },
+  resultTextWrap: { padding: 12 },
+  resultTitle: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  resultMeta: { color: "#999", fontSize: 12, marginTop: 4 },
+  podiumWrap: { marginTop: 10, gap: 6 },
+  podiumItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  podiumIcon: { fontSize: 16 },
+  podiumText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
 
-  /* generic card */
-  card: { backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER, borderRadius: R, padding: SP },
-
-  /* mini event */
-  miniCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 10 },
-  miniTitle: { color: "#fff", fontWeight: "700" },
-  miniMeta: { color: "#bdbdbd", marginTop: 2, fontSize: 12 },
-
-  /* players */
-  playersRow: { flexDirection: "row", gap: SP },
-  playerCard: { flex: 1, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 10, alignItems: "center", position: "relative" },
-  playerImg: { width: 110, height: 140, borderRadius: 12, backgroundColor: "#0f0f0f" },
-  playerSubtitle: { color: "#bdbdbd", fontSize: 12 },
-  playerName: { color: "#00FFFC", fontWeight: "800", fontSize: 16, marginTop: 2 },
-  badge: { position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 13, backgroundColor: "#f5b800", alignItems: "center", justifyContent: "center" },
-  badgeText: { fontWeight: "800" },
-
-  /* results */
-  resultCard: { height: 150, borderRadius: R, overflow: "hidden", backgroundColor: CARD_BG, marginBottom: 6 },
-  resultImg: { width: "100%", height: "100%" },
-  resultShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.35)" },
-  resultInner: { position: "absolute", left: 12, right: 12, bottom: 12 },
-  resultTitle: { color: "#fff", fontWeight: "900", fontSize: 16 },
-  resultMeta: { color: "#dadada", marginTop: 2 },
-  finisherRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 12 },
-  finisherImg: { width: 28, height: 28, borderRadius: 14 },
-  finisherName: { color: "#fff", fontWeight: "600", flex: 1 },
-
-  /* news */
-  newsCard: { borderRadius: R, overflow: "hidden", backgroundColor: CARD_BG },
-  newsImageWrap: { height: 170, borderTopLeftRadius: R, borderTopRightRadius: R, overflow: "hidden" },
-  newsImage: { width: "100%", height: "100%" },
-  newsShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.25)" },
-  newsHeader: { position: "absolute", left: 12, right: 12, bottom: 10 },
-  newsTitle: { color: "#fff", fontWeight: "900", fontSize: 18 },
-  newsMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  newsMeta: { color: "#eaeaea" },
-  newsBadge: { backgroundColor: "#1fb6ff", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
-  newsBadgeText: { color: "#001018", fontWeight: "900", fontSize: 12 },
-  newsFooter: { paddingHorizontal: 12, paddingVertical: 12, borderBottomLeftRadius: R, borderBottomRightRadius: R, backgroundColor: "rgba(255,255,255,0.04)" },
-  newsExcerpt: { color: "#cfcfcf" },
+  newsCard: {
+    width: 260,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  newsImgWrap: { position: "relative" },
+  newsImg: { width: "100%", height: 140, resizeMode: "cover" },
+  newsOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  newsContent: { padding: 12 },
+  newsTitle: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  newsMeta: { color: "#999", fontSize: 12, fontWeight: "500" },
 });

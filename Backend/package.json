@@ -4,9 +4,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --watch src src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "add:video": "node scripts/add-media.js video",
+    "add:album": "node scripts/add-media.js album",
+    "add:image": "node scripts/add-media.js image",
+    "add:news": "node scripts/add-media.js news"
   },
   "keywords": [],
   "author": "",

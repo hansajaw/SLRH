@@ -91,6 +91,10 @@ export default function TabsLayout() {
         name="racing/[id]"
         options={{ href: null, headerShown: false }}
       />
+      <Tabs.Screen
+        name="racing/result/[id]"
+        options={{ href: null, headerShown: false }}
+      />
     </Tabs>
   );
 }

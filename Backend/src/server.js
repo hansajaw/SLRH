@@ -10,6 +10,8 @@ import cartRouter from "./routes/cart.js";
 import checkoutRouter from "./routes/checkout.js";
 import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
+import mediaRouter from "./routes/media.js";
+
 
 dotenv.config();
 
@@ -38,6 +40,8 @@ app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/products", productsRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/checkout", checkoutRouter);
+app.use("/api/v1/media", mediaRouter);
+
 
 app.get("/", (_req, res) => res.send("✅ SLRH backend is running"));
 app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));

@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   FlatList,
 } from "react-native";
-import { Video, ResizeMode } from "expo-av";
 import SafeScreen from "../../../components/SafeScreen";
 import SegmentedBar from "../../../components/SegmentedBar";
 import {
@@ -25,38 +24,29 @@ import {
   type NewsItem,
 } from "../../data/media";
 import { useLocalSearchParams } from "expo-router";
+import YoutubePlayer from "react-native-youtube-iframe";
 
-/* ---------------- Tabs ---------------- */
 const TABS = ["Videos", "Images", "News"] as const;
 type TabKey = (typeof TABS)[number];
 
-/* Helper: map any incoming string to a valid tab */
-function normalizeTab(input?: string): TabKey {
-  const t = (input ?? "").toString().trim().toLowerCase();
-  if (t.startsWith("new")) return "News";
-  if (t.startsWith("img") || t.startsWith("pho")) return "Images";
-  return "Videos";
-}
-
 const { width: W } = Dimensions.get("window");
-
-/* Helper to ensure valid Image source */
-const toImageSrc = (src?: string | any) =>
-  typeof src === "string" ? { uri: src } : src;
+const toImg = (x?: any) => (typeof x === "string" ? { uri: x } : x);
 
 export default function MediaScreen() {
-  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
+  const { tab: tabParam, id: newsId } = useLocalSearchParams<{
+    tab?: string;
+    id?: string;
+  }>();
 
-  // initialize from URL param on first render
-  const initialTab = useMemo<TabKey>(() => normalizeTab(tabParam), [tabParam]);
-  const [tab, setTab] = useState<TabKey>(initialTab);
-
-  // also react to param changes while mounted
-  useEffect(() => {
-    setTab(normalizeTab(tabParam));
+  const initialTab: TabKey = useMemo(() => {
+    const t = (tabParam ?? "").toLowerCase();
+    if (t.includes("news")) return "News";
+    if (t.includes("image") || t.includes("photo")) return "Images";
+    return "Videos";
   }, [tabParam]);
 
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [tab, setTab] = useState<TabKey>(initialTab);
+  const fade = useRef(new Animated.Value(1)).current;
 
   const [videos, setVideos] = useState<MediaVideo[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -69,37 +59,55 @@ export default function MediaScreen() {
   const [selectedImage, setSelectedImage] = useState<MediaImage | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
+  /* Load all media data */
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        setVideos(await getVideos());
-        setAlbums(await getAlbums());
-        setNews(await getNews());
-      } catch (err) {
-        console.warn("Media load error", err);
+        const [v, a, n] = await Promise.all([
+          getVideos(),
+          getAlbums(),
+          getNews(),
+        ]);
+        setVideos(v);
+        setAlbums(a);
+        setNews(n);
+      } catch (e) {
+        console.warn("Media load error", e);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  function switchTab(next: TabKey) {
+  /* Animate tab changes */
+  useEffect(() => {
     Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
-      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 0, duration: 120, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 1, duration: 200, useNativeDriver: true }),
     ]).start();
-    setTab(next);
-    setSelectedAlbum(null);
-    setSelectedImage(null);
-    setSelectedNews(null);
-    setSelectedVideo(null);
-  }
+  }, [tab]);
 
+  /* Handle direct news navigation (from Home) */
+  useEffect(() => {
+    if (newsId && news.length > 0) {
+      const found = news.find((n) => n._id === newsId);
+      if (found) {
+        setTab("News");
+        setSelectedNews(found);
+      }
+    }
+  }, [newsId, news]);
+
+  /* Open Album */
   async function openAlbum(a: Album) {
     setSelectedAlbum(a);
-    // If your getAlbumImages does not accept an id, change to: await getAlbumImages()
-    setAlbumImages(await getAlbumImages(a._id as any));
+    try {
+      const imgs = await getAlbumImages(a._id);
+      setAlbumImages(imgs);
+    } catch (e) {
+      console.warn(e);
+    }
   }
 
   const Empty = ({ text }: { text: string }) => (
@@ -111,50 +119,67 @@ export default function MediaScreen() {
   return (
     <SafeScreen bg="#0b0b0b">
       <View style={s.header}>
-        <Text style={s.pageTitle}>Media Hub</Text>
+        <Text style={s.pageTitle}>Media</Text>
       </View>
+      <SegmentedBar tabs={TABS} value={tab} onChange={setTab} />
 
-      <SegmentedBar tabs={TABS} value={tab} onChange={switchTab} />
-
-      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+      <Animated.View style={{ flex: 1, opacity: fade }}>
         {loading ? (
           <View style={s.loader}>
             <ActivityIndicator color="#00E0C6" size="large" />
           </View>
         ) : (
           <>
-            {/* -------------------- VIDEOS -------------------- */}
+            {/* ------------------ VIDEOS ------------------ */}
             {tab === "Videos" && (
               <>
-                {selectedVideo && (
-                  <Modal
-                    visible
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setSelectedVideo(null)}
+                <Modal
+                  visible={!!selectedVideo}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setSelectedVideo(null)}
+                >
+                  <Pressable
+                    style={s.modalBg}
+                    onPress={() => setSelectedVideo(null)}
                   >
-                    <Pressable style={s.modalBg} onPress={() => setSelectedVideo(null)}>
-                      <Video
-                        source={{ uri: selectedVideo.source }}
-                        style={s.modalVideo}
-                        useNativeControls
-                        resizeMode={ResizeMode.CONTAIN}
-                        shouldPlay
-                      />
-                    </Pressable>
-                  </Modal>
-                )}
+                    <View style={s.modalInner}>
+                      {selectedVideo && (
+                        <YoutubePlayer
+                          height={(W * 9) / 16}
+                          width={W * 0.92}
+                          videoId={selectedVideo.youtubeId}
+                          play={true}
+                        />
+                      )}
+                    </View>
+                  </Pressable>
+                </Modal>
+
                 <FlatList
                   data={videos}
                   keyExtractor={(v) => v._id}
                   contentContainerStyle={s.scrollPad}
                   ListEmptyComponent={<Empty text="No videos yet" />}
                   renderItem={({ item }) => (
-                    <Pressable style={s.card} onPress={() => setSelectedVideo(item)}>
-                      <Image source={toImageSrc(item.thumbnail)} style={s.thumb} />
+                    <Pressable
+                      style={s.card}
+                      onPress={() => setSelectedVideo(item)}
+                    >
+                      {item.thumbnail ? (
+                        <Image source={toImg(item.thumbnail)} style={s.thumb} />
+                      ) : (
+                        <View style={[s.thumb, s.imagePh]} />
+                      )}
                       <View style={s.caption}>
-                        <Text style={s.title}>{item.title}</Text>
-                        {!!item.duration && <Text style={s.meta}>{item.duration}</Text>}
+                        <Text style={s.title} numberOfLines={2}>
+                          {item.title}
+                        </Text>
+                        {!!item.caption && (
+                          <Text style={s.meta} numberOfLines={2}>
+                            {item.caption}
+                          </Text>
+                        )}
                       </View>
                     </Pressable>
                   )}
@@ -162,62 +187,117 @@ export default function MediaScreen() {
               </>
             )}
 
-            {/* -------------------- IMAGES -------------------- */}
+            {/* ------------------ IMAGES ------------------ */}
             {tab === "Images" && (
               <>
                 {!selectedAlbum ? (
                   <FlatList
+                    key={"albums"}
                     data={albums}
                     numColumns={2}
                     keyExtractor={(a) => a._id}
-                    contentContainerStyle={[s.scrollPad, { justifyContent: "center" }]}
+                    contentContainerStyle={[s.scrollPad, { paddingBottom: 100 }]}
                     ListEmptyComponent={<Empty text="No albums yet" />}
                     renderItem={({ item }) => (
-                      <Pressable key={item._id} style={s.album} onPress={() => openAlbum(item)}>
-                        <Image source={toImageSrc(item.cover)} style={s.albumImg} />
-                        <View style={s.overlay} />
-                        <Text style={s.albumTitle}>{item.title}</Text>
+                      <Pressable
+                        key={item._id}
+                        style={s.albumCard}
+                        onPress={() => openAlbum(item)}
+                      >
+                        {item.cover ? (
+                          <Image
+                            source={toImg(item.cover)}
+                            style={s.albumCover}
+                          />
+                        ) : (
+                          <View style={[s.albumCover, s.imagePh]} />
+                        )}
+                        <View style={s.albumOverlay}>
+                          <Text style={s.albumName}>{item.title}</Text>
+                        </View>
                       </Pressable>
                     )}
                   />
                 ) : (
-                  <FlatList
-                    data={albumImages}
-                    numColumns={3}
-                    keyExtractor={(i) => i._id}
-                    columnWrapperStyle={{ gap: 6 }}
-                    contentContainerStyle={{ gap: 6, marginTop: 8, padding: 12 }}
-                    ListHeaderComponent={
-                      <Pressable onPress={() => setSelectedAlbum(null)}>
-                        <Text style={s.back}>← Back to Albums</Text>
+                  <>
+                    {/* Back Toolbar */}
+                    <View style={s.albumToolbar}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          s.backButton,
+                          pressed && {
+                            transform: [{ scale: 0.96 }],
+                            opacity: 0.8,
+                          },
+                        ]}
+                        onPress={() => setSelectedAlbum(null)}
+                      >
+                        <Text style={s.backArrow}>⟵</Text>
+                        <Text style={s.backLabel}>Back to Albums</Text>
                       </Pressable>
-                    }
-                    renderItem={({ item }) => (
-                      <Pressable onPress={() => setSelectedImage(item)} style={s.imgTile}>
-                        <Image source={toImageSrc(item.src)} style={s.img} />
-                      </Pressable>
-                    )}
-                  />
+                      <View style={s.albumTitleWrap}>
+                        <Text style={s.albumToolbarTitle}>
+                          {selectedAlbum.title}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Album Grid */}
+                    <FlatList
+                      key={`images-${selectedAlbum._id}`}
+                      data={albumImages}
+                      keyExtractor={(i) => i._id}
+                      numColumns={3}
+                      columnWrapperStyle={{ gap: 6 }}
+                      contentContainerStyle={{
+                        gap: 6,
+                        marginTop: 10,
+                        padding: 12,
+                      }}
+                      ListEmptyComponent={<Empty text="No images yet" />}
+                      renderItem={({ item }) => (
+                        <Pressable
+                          onPress={() => setSelectedImage(item)}
+                          style={s.imgTile}
+                        >
+                          <Image source={toImg(item.src)} style={s.img} />
+                          <View style={s.photoShade} />
+                        </Pressable>
+                      )}
+                    />
+                  </>
                 )}
+
+                {/* Full-Screen Image Modal */}
                 <Modal
                   visible={!!selectedImage}
                   transparent
                   animationType="fade"
                   onRequestClose={() => setSelectedImage(null)}
                 >
-                  <Pressable style={s.modalBg} onPress={() => setSelectedImage(null)}>
+                  <Pressable
+                    style={s.modalBg}
+                    onPress={() => setSelectedImage(null)}
+                  >
                     {selectedImage && (
-                      <>
-                        <Image source={toImageSrc(selectedImage.src)} style={s.modalImg} />
-                        {selectedImage?.caption && <Text style={s.modalCap}>{selectedImage.caption}</Text>}
-                      </>
+                      <View style={s.modalInner}>
+                        <Image
+                          source={toImg(selectedImage.src)}
+                          style={s.modalImg}
+                        />
+                        {!!selectedImage.caption && (
+                          <Text style={s.modalCap}>
+                            {selectedImage.caption}
+                          </Text>
+                        )}
+                      </View>
                     )}
                   </Pressable>
                 </Modal>
               </>
             )}
 
-            {/* -------------------- NEWS -------------------- */}
+            {/* ------------------ NEWS ------------------ */}
             {tab === "News" && (
               <>
                 {!selectedNews ? (
@@ -227,11 +307,26 @@ export default function MediaScreen() {
                     contentContainerStyle={s.scrollPad}
                     ListEmptyComponent={<Empty text="No news available" />}
                     renderItem={({ item }) => (
-                      <Pressable key={item._id} style={s.newsCard} onPress={() => setSelectedNews(item)}>
-                        <Image source={toImageSrc(item.banner)} style={s.newsImg} />
+                      <Pressable
+                        key={item._id}
+                        style={s.newsCard}
+                        onPress={() => setSelectedNews(item)}
+                      >
+                        {item.banner ? (
+                          <Image
+                            source={toImg(item.banner)}
+                            style={s.newsImg}
+                          />
+                        ) : (
+                          <View style={[s.newsImg, s.imagePh]} />
+                        )}
                         <View style={s.newsText}>
                           <Text style={s.title}>{item.title}</Text>
-                          <Text numberOfLines={2} style={s.meta}>{item.excerpt}</Text>
+                          {!!item.excerpt && (
+                            <Text numberOfLines={2} style={s.meta}>
+                              {item.excerpt}
+                            </Text>
+                          )}
                         </View>
                       </Pressable>
                     )}
@@ -242,16 +337,32 @@ export default function MediaScreen() {
                     keyExtractor={(n) => n._id}
                     contentContainerStyle={s.scrollPad}
                     ListHeaderComponent={
-                      <Pressable onPress={() => setSelectedNews(null)}>
-                        <Text style={s.back}>← Back to News</Text>
+                      <Pressable
+                        style={({ pressed }) => [
+                          s.backButtonNews,
+                          pressed && { opacity: 0.7 },
+                        ]}
+                        onPress={() => setSelectedNews(null)}
+                      >
+                        <Text style={s.backArrow}>⟵</Text>
+                        <Text style={s.backLabel}>Back to News</Text>
                       </Pressable>
                     }
                     renderItem={({ item }) => (
                       <View>
-                        <Image source={toImageSrc(item.banner)} style={s.newsHero} />
+                        {item.banner ? (
+                          <Image
+                            source={toImg(item.banner)}
+                            style={s.newsHero}
+                          />
+                        ) : (
+                          <View style={[s.newsHero, s.imagePh]} />
+                        )}
                         <Text style={s.newsTitle}>{item.title}</Text>
                         <Text style={s.newsBody}>
-                          {item.excerpt ?? "Full article coming soon..."}
+                          {item.body ||
+                            item.excerpt ||
+                            "Full article coming soon..."}
                         </Text>
                       </View>
                     )}
@@ -266,7 +377,6 @@ export default function MediaScreen() {
   );
 }
 
-/* -------------------- STYLES -------------------- */
 const s = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
   pageTitle: { color: "#EFFFFB", fontSize: 22, fontWeight: "900" },
@@ -274,26 +384,116 @@ const s = StyleSheet.create({
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyWrap: { flex: 1, alignItems: "center", paddingTop: 80 },
   emptyText: { color: "#8ecac1", fontSize: 16, fontWeight: "600" },
-  card: { flexDirection: "row", marginVertical: 8, backgroundColor: "#101522", borderRadius: 12, overflow: "hidden" },
+
+  /* Video Cards */
+  card: {
+    flexDirection: "row",
+    marginVertical: 8,
+    backgroundColor: "#101522",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
   thumb: { width: 120, height: 80 },
   caption: { flex: 1, padding: 10 },
   title: { color: "#fff", fontWeight: "800" },
   meta: { color: "#9aa" },
-  album: { width: W / 2.3, height: 150, borderRadius: 12, overflow: "hidden", marginBottom: 8 },
-  albumImg: { width: "100%", height: "100%" },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.25)" },
-  albumTitle: { position: "absolute", bottom: 8, left: 10, color: "#fff", fontWeight: "800" },
+
+  /* Albums */
+  albumCard: {
+    width: "47%",
+    aspectRatio: 1.2,
+    marginHorizontal: "1.5%",
+    marginBottom: 14,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#101522",
+    elevation: 3,
+  },
+  albumCover: { width: "100%", height: "100%", resizeMode: "cover" },
+  albumOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "flex-end",
+    padding: 10,
+  },
+  albumName: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 15,
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowRadius: 6,
+  },
+
+  albumToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#0e0e0e",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1a1a1a",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 224, 198, 0.1)",
+    borderWidth: 1,
+    borderColor: "#00E0C6",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  backArrow: { color: "#00E0C6", fontSize: 18, marginRight: 6 },
+  backLabel: { color: "#fff", fontWeight: "700" },
+  albumTitleWrap: { flex: 1, alignItems: "center" },
+  albumToolbarTitle: { color: "#fff", fontWeight: "900", fontSize: 16 },
+
   imgTile: { flex: 1 / 3, borderRadius: 10, overflow: "hidden" },
   img: { width: "100%", height: 120 },
-  modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
-  modalImg: { width: "90%", height: "70%", resizeMode: "contain", borderRadius: 10 },
+  photoShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.1)",
+  },
+
+  modalBg: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalInner: { width: "100%", alignItems: "center" },
+  modalImg: {
+    width: "90%",
+    height: "70%",
+    resizeMode: "contain",
+    borderRadius: 10,
+  },
   modalCap: { color: "#cfe", marginTop: 10, textAlign: "center" },
-  modalVideo: { width: "90%", height: (W * 0.9 * 9) / 16, borderRadius: 10 },
-  back: { color: "#00E0C6", marginBottom: 8, fontWeight: "700" },
-  newsCard: { marginBottom: 12, borderRadius: 12, overflow: "hidden", backgroundColor: "#101522" },
+
+  backButtonNews: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 224, 198, 0.1)",
+    borderWidth: 1,
+    borderColor: "#00E0C6",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+    marginBottom: 10,
+  },
+
+  newsCard: {
+    marginBottom: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#101522",
+  },
   newsImg: { width: "100%", height: 150 },
   newsText: { padding: 10 },
   newsHero: { width: "100%", height: 220, borderRadius: 10, marginBottom: 12 },
+  imagePh: { backgroundColor: "#222", borderWidth: 1, borderColor: "#2f2f2f" },
   newsTitle: { color: "#fff", fontWeight: "900", fontSize: 18, marginBottom: 6 },
   newsBody: { color: "#cfe", lineHeight: 22 },
 });

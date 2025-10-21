@@ -17,6 +17,7 @@ export default function TeamProfile() {
   const team = id ? getTeamById(id) : undefined;
   const { drivers } = getPeopleData();
 
+  // Handle team not found
   if (!team) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -30,6 +31,7 @@ export default function TeamProfile() {
     );
   }
 
+  // Map team members to driver profiles (if available)
   const members = team.members.map((name) => {
     const d = drivers.find((x) => x.name === name);
     return { name, driverId: d?.id, avatar: d?.avatar };
@@ -37,18 +39,18 @@ export default function TeamProfile() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* ==== Header Bar ==== */}
+      {/* ==== Header ==== */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#00E0C6" />
           <Text style={styles.backTxt}>Back</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Team Profile</Text>
-        <View style={{ width: 50 }} /> {/* spacer for layout balance */}
+        <View style={{ width: 50 }} /> {/* spacer */}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* ==== Team Info ==== */}
+        {/* ==== Team Details ==== */}
         <View style={styles.teamCard}>
           {team.logo ? (
             <Image source={team.logo as any} style={styles.teamLogo} />
@@ -96,6 +98,11 @@ export default function TeamProfile() {
             })}
           </View>
         </View>
+
+        {/* ==== Back Button ==== */}
+        <Pressable onPress={() => router.back()} style={styles.bottomBack}>
+          <Text style={styles.bottomBackTxt}>← Back to Home</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -105,7 +112,7 @@ export default function TeamProfile() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
 
-  // Header bar
+  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -122,7 +129,7 @@ const styles = StyleSheet.create({
 
   scrollContent: { padding: 16, paddingBottom: 60 },
 
-  // Team card
+  // Team Card
   teamCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -167,11 +174,18 @@ const styles = StyleSheet.create({
   memberAvatar: { width: 48, height: 48, borderRadius: 24, resizeMode: "cover" },
   memberName: { color: "#fff", fontSize: 16, fontWeight: "700" },
 
-  // Back links
-  bottomBack: { marginTop: 24, alignSelf: "center" },
+  // Footer
+  bottomBack: {
+    marginTop: 24,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,224,198,0.08)",
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
   bottomBackTxt: { color: "#00E0C6", fontWeight: "700" },
 
-  // Not found
+  // Not Found
   centerBox: { flex: 1, justifyContent: "center", alignItems: "center" },
   miss: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 10 },
   back: { color: "#00E0C6", fontWeight: "700" },

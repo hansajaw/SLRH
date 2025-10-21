@@ -14,8 +14,8 @@ export default function SponsorsScreen() {
         </Text>
 
         <View style={s.logoRow}>
-          <Image source={require("../../assets/sponsors/sponsor1.png")} style={s.logo} />
-          <Image source={require("../../assets/sponsors/sponsor2.png")} style={s.logo} />
+          <Image source={require("../../assets/sponsors/sponsor1.jpg")} style={s.logo} />
+          <Image source={require("../../assets/sponsors/sponsor2.jpg")} style={s.logo} />
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -1,7 +1,6 @@
-// data/home.ts
 import type { ImageSourcePropType } from "react-native";
+import { teams } from "../data/team";
 
-/* -------- Types -------- */
 export type EventItem = {
   _id: string;
   title: string;
@@ -41,7 +40,6 @@ export type NewsItem = {
   createdAt?: string;
 };
 
-/* -------- Data -------- */
 export function getHomeData() {
   const events: EventItem[] = [
     {
@@ -124,5 +122,5 @@ export function getHomeData() {
     },
   ];
 
-  return { events, players, news };
+  return { events, players, news, teams }; // ✅ Added teams
 }
