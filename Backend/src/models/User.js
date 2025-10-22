@@ -1,21 +1,44 @@
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
+/* -------------------- USER SCHEMA -------------------- */
 const userSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true, select: false },
-    resetToken: String,
-    resetExpires: Date,
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: 6,
+      select: false, // Hide password by default
+    },
+    fullName: { type: String }, // ✅ Added fullName
+    phone: { type: String },
+    address1: { type: String },
+    address2: { type: String },
+    city: { type: String },
+    zip: { type: String },
+    avatarUri: { type: String },
+    caption: { type: String },
   },
   { timestamps: true }
 );
 
-// 🔐 Auto-hash password before save
+/* -------------------- PASSWORD HASHING -------------------- */
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-export const User = mongoose.model("User", userSchema);
+/* -------------------- PASSWORD COMPARISON -------------------- */
+userSchema.methods.correctPassword = async function (candidate, stored) {
+  return await bcrypt.compare(candidate, stored);
+};
+
+/* -------------------- EXPORT -------------------- */
+module.exports = mongoose.model("User", userSchema);

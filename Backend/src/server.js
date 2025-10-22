@@ -14,7 +14,7 @@ dotenv.config();
 
 const app = express();
 
-// --- CORS ---
+/* -------------------- CORS -------------------- */
 const ALLOWED = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map((s) => s.trim())
@@ -34,7 +34,7 @@ app.use(
 
 app.use(express.json());
 
-// --- ROUTES ---
+/* -------------------- ROUTES -------------------- */
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/products", productsRouter);
@@ -42,11 +42,11 @@ app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/checkout", checkoutRouter);
 app.use("/api/v1/media", mediaRouter);
 
-// --- Health Check ---
+/* -------------------- HEALTH CHECK -------------------- */
 app.get("/", (_req, res) => res.send("✅ SLRH backend is running"));
 app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));
 
-// --- Database Connection ---
+/* -------------------- DATABASE CONNECTION -------------------- */
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) throw new Error("❌ Missing MONGO_URI in environment");
 
@@ -55,5 +55,6 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ✅ Export Express app instead of starting a server
+/* -------------------- EXPORT APP -------------------- */
+// Exporting app lets you start the server in another file (e.g., index.js or serverless)
 export default app;

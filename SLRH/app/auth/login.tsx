@@ -24,11 +24,10 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
-  const [remember, setRemember] = useState(true); // ✅ default true
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const { login } = useUser();
 
-  /* -------- Handle Login -------- */
   async function onLogin() {
     if (!email || !password) {
       Alert.alert("Missing info", "Please enter email and password.");
@@ -38,50 +37,44 @@ export default function Login() {
       setLoading(true);
       await login(email.trim(), password.trim(), remember);
       Alert.alert("Welcome", "Logged in successfully!");
-      router.replace("/"); // ✅ correct route
+      router.replace("/"); // adjust if your home is '/(tabs)'
     } catch (e: any) {
       console.log("Login error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ??
-        (e?.message?.includes("Network") ? "Network error — check your connection." : "Invalid email or password.");
+        (e?.message?.includes("Network")
+          ? "Network error — check your connection."
+          : "Invalid email or password.");
       Alert.alert("Login failed", message);
     } finally {
       setLoading(false);
     }
   }
 
-  /* -------- Forgot Password -------- */
+  // NOTE: backend doesn't expose POST /auth/forgot in the provided code.
+  // We show a friendly message instead of calling a missing endpoint.
   async function onForgot() {
     if (!email) {
       Alert.alert("Forgot Password", "Enter your email above first.");
       return;
     }
-    try {
-      setLoading(true);
-      const { data } = await api.post("/auth/forgot", { email: email.trim() });
-      if (data?.resetToken) {
-        Alert.alert(
-          "Reset Link (Dev Mode)",
-          "A reset token was generated:\n\n" + data.resetToken
-        );
-      } else {
-        Alert.alert(
-          "Reset",
-          data?.message ?? "If this email exists, a reset link was sent."
-        );
-      }
-    } catch (e: any) {
-      console.log("Forgot error:", e?.response?.data || e?.message);
-      Alert.alert(
-        "Reset failed",
-        e?.response?.data?.message ?? "Unable to send reset link. Try again."
-      );
-    } finally {
-      setLoading(false);
-    }
+    Alert.alert(
+      "Reset not enabled",
+      "Password reset endpoint is not available on your backend yet. Ask the backend to add /auth/forgot or handle it manually."
+    );
+    // If you later add the endpoint, you can uncomment:
+    // try {
+    //   setLoading(true);
+    //   const { data } = await api.post("/auth/forgot", { email: email.trim() });
+    //   Alert.alert("Reset", data?.message ?? "If this email exists, a reset link was sent.");
+    // } catch (e: any) {
+    //   console.log("Forgot error:", e?.response?.data || e?.message);
+    //   Alert.alert("Reset failed", e?.response?.data?.message ?? "Unable to send reset link.");
+    // } finally {
+    //   setLoading(false);
+    // }
   }
 
-  /* -------- Render -------- */
   return (
     <SafeScreen bg="#0b0b0b">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -94,7 +87,6 @@ export default function Login() {
           />
 
           <View style={s.contentBottom}>
-            {/* ---------- Title ---------- */}
             <View style={{ gap: S.sm }}>
               <Text style={s.title}>Welcome Back!</Text>
               <Text style={s.subtitle}>
@@ -102,7 +94,6 @@ export default function Login() {
               </Text>
             </View>
 
-            {/* ---------- Form ---------- */}
             <View style={s.card}>
               <Text style={s.label}>Email Address</Text>
               <TextInput
@@ -139,7 +130,6 @@ export default function Login() {
                 </Pressable>
               </View>
 
-              {/* ---------- Remember + Forgot ---------- */}
               <View style={[s.row, { marginTop: S.md }]}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: S.xs }}>
                   <Switch
@@ -159,7 +149,6 @@ export default function Login() {
               </View>
             </View>
 
-            {/* ---------- Buttons ---------- */}
             <View style={{ gap: S.sm, marginTop: S.lg }}>
               <Pressable
                 onPress={onLogin}
@@ -184,7 +173,6 @@ export default function Login() {
               </Pressable>
             </View>
 
-            {/* ---------- Footer ---------- */}
             <Text style={[s.small, { textAlign: "center", marginTop: S.lg }]}>
               New here?{" "}
               <Text
@@ -201,7 +189,6 @@ export default function Login() {
   );
 }
 
-/* -------------------- Styles -------------------- */
 const s = StyleSheet.create({
   contentBottom: {
     flex: 1,

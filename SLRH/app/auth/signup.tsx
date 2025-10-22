@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AxiosError } from "axios";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
+import api from "../../utils/api";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -24,7 +25,7 @@ export default function Signup() {
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { signup } = useUser();
+  const { login } = useUser();
 
   function validate() {
     if (!email || !pw || !pw2) return "Please fill in all fields.";
@@ -41,18 +42,27 @@ export default function Signup() {
 
     try {
       setLoading(true);
-      await signup(email, pw, pw2);
+
+      // ✅ Send what the backend expects: { email, password, confirmPassword }
+      await api.post("/auth/signup", {
+        email: email.trim(),
+        password: pw,
+        confirmPassword: pw2,
+      });
+
+      // ✅ Immediately log in so we have a token for profile setup
+      await login(email.trim(), pw, true);
+
+      // ✅ Go to profile setup with email param
       router.push({ pathname: "/auth/profile-setup", params: { email } });
     } catch (error) {
       const e = error as AxiosError<{ message?: string }>;
-      console.log("Signup error:", e.response?.data || e.message || e);
-
+      console.log("Signup error:", e?.response?.data || e?.message || e);
       const message =
-        e.response?.data?.message ||
-        (e.message?.includes("Network")
+        e?.response?.data?.message ||
+        (e?.message?.includes("Network")
           ? "Cannot reach server. Is the backend running?"
           : "Please try again.");
-
       Alert.alert("Signup failed", message);
     } finally {
       setLoading(false);

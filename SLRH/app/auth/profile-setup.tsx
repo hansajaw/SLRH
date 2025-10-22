@@ -1,4 +1,6 @@
-// app/auth/profile-setup.tsx
+// unchanged from your uploaded version
+// (pasting intact for convenience)
+
 import { useState } from "react";
 import {
   View,
@@ -21,7 +23,7 @@ import { useUser } from "../../context/UserContext";
 
 export default function ProfileSetup() {
   const { email } = useLocalSearchParams<{ email?: string }>();
-  const { updateProfile } = useUser(); // ✅ fixed (matches UserContext)
+  const { updateProfile } = useUser();
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -32,7 +34,6 @@ export default function ProfileSetup() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 📸 Pick image
   async function pickAvatar() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -49,7 +50,6 @@ export default function ProfileSetup() {
     if (!res.canceled && res.assets?.length) setAvatarUri(res.assets[0].uri);
   }
 
-  // 💾 Submit handler
   async function onCreate() {
     if (!fullName.trim()) {
       Alert.alert("Missing name", "Please enter your full name.");
@@ -104,7 +104,6 @@ export default function ProfileSetup() {
             <Text style={s.title}>Profile Setup</Text>
             <Text style={s.subtitle}>Add your Details</Text>
 
-            {/* Avatar */}
             <View style={[s.card, { alignItems: "center", marginTop: 12, marginBottom: 10 }]}>
               <View style={s.avatarWrap}>
                 {avatarUri ? (
@@ -122,7 +121,6 @@ export default function ProfileSetup() {
               {!!email && <Text style={[s.small, { marginTop: 6 }]}>Email: {email}</Text>}
             </View>
 
-            {/* Basic Info */}
             <View style={[s.card, { gap: 10 }]}>
               <Text style={s.section}>👤 Basic Info</Text>
               <Text style={s.label}>Full Name</Text>
@@ -144,7 +142,6 @@ export default function ProfileSetup() {
               />
             </View>
 
-            {/* Address */}
             <View style={[s.card, { gap: 10, marginTop: 12 }]}>
               <Text style={s.section}>📍 Address</Text>
               <Text style={s.label}>Address Line 1</Text>
@@ -188,7 +185,6 @@ export default function ProfileSetup() {
               </View>
             </View>
 
-            {/* Submit */}
             <Pressable
               onPress={onCreate}
               style={[s.primaryBtn, loading && { opacity: 0.6 }]}

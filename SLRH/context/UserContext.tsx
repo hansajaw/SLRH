@@ -6,6 +6,7 @@ import api from "../utils/api";
 type User = {
   _id?: string;
   email: string;
+  fullName?: string;  
   phone?: string;
   address1?: string;
   address2?: string;
