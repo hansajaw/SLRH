@@ -10,20 +10,33 @@ function sign(user) {
   return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 }
 
-/* ---------- SIGNUP (no manual hashing; let pre-save hook hash) ---------- */
+/* ---------- SIGNUP ---------- */
 router.post("/signup", async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
-    if (!fullName || !email || !password) {
-      return res.status(400).json({ message: "Missing fields" });
+    const { fullName, email, password, confirmPassword } = req.body;
+
+    // ✅ Validate fields
+    if (!fullName || !email || !password || !confirmPassword) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: "Email already in use" });
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
 
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ fullName, email, password: hashed });
+    // ✅ Check if email already exists
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
+
+    // ✅ Create user (model will hash password automatically)
+    const user = await User.create({ fullName, email, password });
+
+    // ✅ Generate JWT token
     const token = sign(user);
+
+    // ✅ Remove password before sending
     const safeUser = user.toObject();
     delete safeUser.password;
 
@@ -41,7 +54,6 @@ router.post("/login", async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Email and password required" });
 
-    // Need password to compare -> select("+password")
     const user = await User.findOne({ email }).select("+password");
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
@@ -65,18 +77,20 @@ router.post("/forgot", async (req, res) => {
     if (!email) return res.status(400).json({ message: "Email required" });
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(200).json({ message: "If the email exists, a reset link was sent." });
+    if (!user)
+      return res
+        .status(200)
+        .json({ message: "If the email exists, a reset link was sent." });
 
-    // generate token (not JWT) and expiry
     const raw = crypto.randomBytes(32).toString("hex");
     const hashed = crypto.createHash("sha256").update(raw).digest("hex");
     user.resetToken = hashed;
-    user.resetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    user.resetExpires = new Date(Date.now() + 15 * 60 * 1000);
     await user.save({ validateBeforeSave: false });
 
-    // In production: send email with link containing ?token=<raw>
-    // For now, return the token so you can test from the app:
-    return res.status(200).json({ message: "Reset link generated", resetToken: raw });
+    return res
+      .status(200)
+      .json({ message: "Reset link generated", resetToken: raw });
   } catch (err) {
     console.error("Forgot error:", err);
     res.status(500).json({ message: "Server error generating reset link" });
@@ -88,7 +102,9 @@ router.post("/reset", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
     if (!token || !newPassword) {
-      return res.status(400).json({ message: "Token and newPassword required" });
+      return res
+        .status(400)
+        .json({ message: "Token and newPassword required" });
     }
 
     const hashed = crypto.createHash("sha256").update(token).digest("hex");
@@ -97,9 +113,10 @@ router.post("/reset", async (req, res) => {
       resetExpires: { $gt: new Date() },
     }).select("+password");
 
-    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+    if (!user)
+      return res.status(400).json({ message: "Invalid or expired token" });
 
-    user.password = newPassword; // pre('save') will hash it
+    user.password = newPassword;
     user.resetToken = undefined;
     user.resetExpires = undefined;
     await user.save();
