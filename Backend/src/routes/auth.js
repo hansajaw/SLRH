@@ -21,7 +21,8 @@ router.post("/signup", async (req, res) => {
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ message: "Email already in use" });
 
-    const user = await User.create({ fullName, email, password }); // <-- no bcrypt.hash here
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({ fullName, email, password: hashed });
     const token = sign(user);
     const safeUser = user.toObject();
     delete safeUser.password;
