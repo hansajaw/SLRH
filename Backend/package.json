@@ -5,29 +5,25 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon --watch src src/server.js",
-    "start": "node src/server.js",
-    "add:video": "node scripts/add-media.js video",
-    "add:album": "node scripts/add-media.js album",
-    "add:image": "node scripts/add-media.js image",
-    "add:news": "node scripts/add-media.js news"
+    "start": "node src/server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^5.1.0",
+    "express": "^4.19.2",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.1",
-    "morgan": "^1.10.1",
-    "socket.io": "^4.8.1"
+    "morgan": "^1.10.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
   },
-  "description": ""
+  "engines": {
+    "node": ">=18.x"
+  },
+  "license": "ISC",
+  "description": "SLRH Backend API"
 }
