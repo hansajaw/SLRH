@@ -1,4 +1,3 @@
-// context/UserContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/api";
@@ -6,7 +5,6 @@ import api from "../utils/api";
 /* -------------------- Types -------------------- */
 type User = {
   _id?: string;
-  fullName: string;
   email: string;
   phone?: string;
   address1?: string;
@@ -22,9 +20,9 @@ type Ctx = {
   token: string | null;
   loading: boolean;
   login(email: string, password: string, remember?: boolean): Promise<void>;
-  signup(fullName: string, email: string, password: string): Promise<void>;
+  signup(email: string, password: string, confirmPassword: string): Promise<void>;
   updateProfile(data: Partial<User>): Promise<void>;
-  updateAvatar(uri: string): Promise<void>; // ✅ new function
+  updateAvatar(uri: string): Promise<void>;
   loadMe(): Promise<void>;
   changePassword(oldPassword: string, newPassword: string): Promise<void>;
   logout(): Promise<void>;
@@ -48,7 +46,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           setToken(storedToken);
           api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
           if (storedUser) setUser(JSON.parse(storedUser));
-          else await loadMe(); // fallback if user not cached
+          else await loadMe();
         }
       } catch (err) {
         console.warn("Error restoring user:", err);
@@ -59,8 +57,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /* -------- Signup -------- */
-  async function signup(fullName: string, email: string, password: string) {
-    const { data } = await api.post("/auth/signup", { fullName, email, password });
+  async function signup(email: string, password: string, confirmPassword: string) {
+    const { data } = await api.post("/auth/signup", { email, password, confirmPassword });
     setToken(data.token);
     setUser(data.user);
     api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
@@ -94,18 +92,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem("user", JSON.stringify(data.user));
   }
 
-  /* -------- ✅ Update avatar -------- */
+  /* -------- Update avatar -------- */
   async function updateAvatar(uri: string) {
     try {
-      // Option 1: send to backend
-      // const formData = new FormData();
-      // formData.append("avatar", { uri, name: "avatar.jpg", type: "image/jpeg" });
-      // const { data } = await api.patch("/users/me/avatar", formData, {
-      //   headers: { "Content-Type": "multipart/form-data" },
-      // });
-      // setUser(data.user);
-
-      // Option 2: just store locally (for now)
       setUser((prev) => (prev ? { ...prev, avatarUri: uri } : prev));
       const updated = { ...user, avatarUri: uri };
       await AsyncStorage.setItem("user", JSON.stringify(updated));
@@ -138,7 +127,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         updateProfile,
-        updateAvatar, // ✅ include it in the context
+        updateAvatar,
         loadMe,
         changePassword,
         logout,

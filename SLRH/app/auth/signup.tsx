@@ -11,6 +11,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { AxiosError } from "axios";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
 
@@ -40,17 +41,18 @@ export default function Signup() {
 
     try {
       setLoading(true);
-      await signup(email.split("@")[0], email, pw);
-
-      // If signup succeeded → go to profile setup
+      await signup(email, pw, pw2);
       router.push({ pathname: "/auth/profile-setup", params: { email } });
-    } catch (e: any) {
-      console.log("Signup error:", e?.response?.data || e?.message || e);
+    } catch (error) {
+      const e = error as AxiosError<{ message?: string }>;
+      console.log("Signup error:", e.response?.data || e.message || e);
+
       const message =
-        e?.response?.data?.message ||
-        (e?.message?.includes("Network")
-          ? "Cannot reach server. Is the backend running on port 3001?"
+        e.response?.data?.message ||
+        (e.message?.includes("Network")
+          ? "Cannot reach server. Is the backend running?"
           : "Please try again.");
+
       Alert.alert("Signup failed", message);
     } finally {
       setLoading(false);
@@ -91,12 +93,7 @@ export default function Signup() {
             style={[s.input, { paddingRight: 44 }]}
             secureTextEntry={!showPw}
           />
-          <Pressable
-            onPress={() => setShowPw((v) => !v)}
-            hitSlop={10}
-            style={s.eyeBtn}
-            accessibilityLabel={showPw ? "Hide password" : "Show password"}
-          >
+          <Pressable onPress={() => setShowPw((v) => !v)} style={s.eyeBtn}>
             <Ionicons name={showPw ? "eye-off" : "eye"} size={20} color="#9adbd2" />
           </Pressable>
         </View>
@@ -111,17 +108,11 @@ export default function Signup() {
             style={[s.input, { paddingRight: 44 }]}
             secureTextEntry={!showPw2}
           />
-          <Pressable
-            onPress={() => setShowPw2((v) => !v)}
-            hitSlop={10}
-            style={s.eyeBtn}
-            accessibilityLabel={showPw2 ? "Hide password" : "Show password"}
-          >
+          <Pressable onPress={() => setShowPw2((v) => !v)} style={s.eyeBtn}>
             <Ionicons name={showPw2 ? "eye-off" : "eye"} size={20} color="#9adbd2" />
           </Pressable>
         </View>
 
-        {/* Agree to Terms */}
         <Pressable style={s.checkRow} onPress={() => setAgree(!agree)}>
           <View
             style={[
@@ -137,24 +128,12 @@ export default function Signup() {
           </Text>
         </Pressable>
 
-        {/* Continue Button */}
         <Pressable
           onPress={onContinue}
           style={[s.primaryBtn, loading && { opacity: 0.6 }]}
           disabled={loading}
         >
           <Text style={s.primaryText}>{loading ? "Please wait…" : "Continue"}</Text>
-        </Pressable>
-
-        {/* Social Logins */}
-        <Pressable style={s.socialBtn} accessibilityLabel="Continue with Google">
-          <Ionicons name="logo-google" size={18} color="#fff" />
-          <Text style={s.socialText}>Continue with Google</Text>
-        </Pressable>
-
-        <Pressable style={s.socialBtn} accessibilityLabel="Continue with Facebook">
-          <Ionicons name="logo-facebook" size={18} color="#1877F2" />
-          <Text style={s.socialText}>Continue with Facebook</Text>
         </Pressable>
 
         <Text style={[s.footerText, { marginTop: 20 }]}>
@@ -214,18 +193,5 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   primaryText: { color: "#001018", fontWeight: "900", fontSize: 16 },
-  socialBtn: {
-    marginTop: 12,
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#1a2232",
-    backgroundColor: "#0f1620",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  socialText: { color: "#EFFFFB", fontWeight: "700" },
   footerText: { color: "#9adbd2", textAlign: "center", fontWeight: "600" },
 });
