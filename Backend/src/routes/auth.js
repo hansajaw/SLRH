@@ -5,6 +5,7 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
+// Helper: sign JWT token
 function signToken(id) {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not set");
@@ -68,8 +69,10 @@ router.post("/forgot", async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email required." });
+
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "No account found with that email." });
+
     res.status(200).json({ message: "Password reset link (mock) sent." });
   } catch (err) {
     console.error("❌ Forgot error:", err);

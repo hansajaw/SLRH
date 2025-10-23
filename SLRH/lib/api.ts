@@ -26,12 +26,10 @@ const base = (envUrl || extraUrl || fallbackUrl).replace(/\/$/, "");
    ✅ Create Axios instance
 --------------------------------------------------- */
 export const api = axios.create({
-  baseURL: `${base}/api/v1`,
-  timeout: 15000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: "https://slrh-4cql.vercel.app/api/v1",
+  headers: { "Content-Type": "application/json" },
 });
+
 
 console.log("🌍 API Base URL:", `${base}/api/v1`);
 
