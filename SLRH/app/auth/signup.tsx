@@ -28,6 +28,7 @@ export default function Signup() {
   const { login } = useUser();
 
   function validate() {
+    console.log("Validating signup:", { email, pw, pw2, agree });
     if (!email || !pw || !pw2) return "Please fill in all fields.";
     if (!email.includes("@")) return "Enter a valid email address.";
     if (pw.length < 6) return "Password must be at least 6 characters long.";
@@ -38,26 +39,26 @@ export default function Signup() {
 
   async function onContinue() {
     const err = validate();
-    if (err) return Alert.alert("Check details", err);
+    if (err) {
+      Alert.alert("Check details", err);
+      return;
+    }
 
     try {
       setLoading(true);
-
-      // ✅ Send what the backend expects: { email, password, confirmPassword }
+      console.log("Sending signup request:", { email });
       await api.post("/auth/signup", {
         email: email.trim(),
         password: pw,
         confirmPassword: pw2,
       });
-
-      // ✅ Immediately log in so we have a token for profile setup
+      console.log("Signup successful, logging in...");
       await login(email.trim(), pw, true);
-
-      // ✅ Go to profile setup with email param
+      console.log("Navigating to profile setup");
       router.push({ pathname: "/auth/profile-setup", params: { email } });
     } catch (error) {
       const e = error as AxiosError<{ message?: string }>;
-      console.log("Signup error:", e?.response?.data || e?.message || e);
+      console.error("Signup error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ||
         (e?.message?.includes("Network")

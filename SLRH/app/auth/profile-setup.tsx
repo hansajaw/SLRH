@@ -1,6 +1,3 @@
-// unchanged from your uploaded version
-// (pasting intact for convenience)
-
 import { useState } from "react";
 import {
   View,
@@ -35,19 +32,27 @@ export default function ProfileSetup() {
   const [loading, setLoading] = useState(false);
 
   async function pickAvatar() {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission needed", "Allow photo library access to choose a profile picture.");
-      return;
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Allow photo library access to choose a profile picture.");
+        return;
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+        selectionLimit: 1,
+      });
+      if (!res.canceled && res.assets?.length) {
+        console.log("Selected avatar:", res.assets[0].uri);
+        setAvatarUri(res.assets[0].uri);
+      }
+    } catch (err) {
+      console.error("Avatar picker error:", err);
+      Alert.alert("Error", "Failed to pick avatar. Try again.");
     }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.9,
-      selectionLimit: 1,
-    });
-    if (!res.canceled && res.assets?.length) setAvatarUri(res.assets[0].uri);
   }
 
   async function onCreate() {
@@ -58,6 +63,7 @@ export default function ProfileSetup() {
 
     try {
       setLoading(true);
+      console.log("Updating profile:", { fullName, phone, addr1, addr2, city, zip, avatarUri });
       await updateProfile({
         fullName,
         phone,
@@ -68,12 +74,12 @@ export default function ProfileSetup() {
         avatarUri: avatarUri ?? undefined,
         caption: "Fueling your passion for speed. Buckle up!",
       });
-
+      console.log("Profile updated successfully");
       Alert.alert("✅ Success", "Your account has been created!", [
         { text: "OK", onPress: () => router.replace("/(tabs)") },
       ]);
     } catch (e: any) {
-      console.log("❌ Profile save error:", e?.response?.data || e);
+      console.error("Profile save error:", e?.response?.data || e);
       Alert.alert("Failed", e?.response?.data?.message ?? "Try again.");
     } finally {
       setLoading(false);

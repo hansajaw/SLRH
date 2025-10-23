@@ -35,11 +35,12 @@ export default function Login() {
     }
     try {
       setLoading(true);
+      console.log("Attempting login:", { email });
       await login(email.trim(), password.trim(), remember);
       Alert.alert("Welcome", "Logged in successfully!");
-      router.replace("/"); // adjust if your home is '/(tabs)'
+      router.replace("/(tabs)"); // Fixed to navigate to tabs route
     } catch (e: any) {
-      console.log("Login error:", e?.response?.data || e?.message || e);
+      console.error("Login error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ??
         (e?.message?.includes("Network")
@@ -51,28 +52,22 @@ export default function Login() {
     }
   }
 
-  // NOTE: backend doesn't expose POST /auth/forgot in the provided code.
-  // We show a friendly message instead of calling a missing endpoint.
   async function onForgot() {
     if (!email) {
       Alert.alert("Forgot Password", "Enter your email above first.");
       return;
     }
-    Alert.alert(
-      "Reset not enabled",
-      "Password reset endpoint is not available on your backend yet. Ask the backend to add /auth/forgot or handle it manually."
-    );
-    // If you later add the endpoint, you can uncomment:
-    // try {
-    //   setLoading(true);
-    //   const { data } = await api.post("/auth/forgot", { email: email.trim() });
-    //   Alert.alert("Reset", data?.message ?? "If this email exists, a reset link was sent.");
-    // } catch (e: any) {
-    //   console.log("Forgot error:", e?.response?.data || e?.message);
-    //   Alert.alert("Reset failed", e?.response?.data?.message ?? "Unable to send reset link.");
-    // } finally {
-    //   setLoading(false);
-    // }
+    try {
+      setLoading(true);
+      console.log("Sending forgot password request for:", email);
+      const { data } = await api.post("/auth/forgot", { email: email.trim() });
+      Alert.alert("Reset", data?.message ?? "If this email exists, a reset link was sent.");
+    } catch (e: any) {
+      console.error("Forgot error:", e?.response?.data || e?.message);
+      Alert.alert("Reset failed", e?.response?.data?.message ?? "Unable to send reset link.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
