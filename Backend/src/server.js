@@ -3,15 +3,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-// ✅ Import all routes
-import authRoutes from "./src/routes/auth.js";
-import userRoutes from "./src/routes/users.js";
-import productRoutes from "./src/routes/products.js";
-import eventRoutes from "./src/routes/events.js";
-import mediaRoutes from "./src/routes/media.js";
-import liveRoutes from "./src/routes/live.js";
-import cartRoutes from "./src/routes/cart.js";
-import checkoutRoutes from "./src/routes/checkout.js";
+// ✅ Import routes (corrected paths)
+import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/users.js";
+import productRoutes from "./routes/products.js";
+import eventRoutes from "./routes/events.js";
+import mediaRoutes from "./routes/media.js";
+import liveRoutes from "./routes/live.js";
+import cartRoutes from "./routes/cart.js";
+import checkoutRoutes from "./routes/checkout.js";
 
 dotenv.config();
 
@@ -30,7 +30,7 @@ app.use(
 mongoose
   .connect(process.env.MONGO_URI, { dbName: "slrh" })
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // ✅ Routes
 app.use("/api/v1/auth", authRoutes);
@@ -42,17 +42,15 @@ app.use("/api/v1/live", liveRoutes);
 app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/checkout", checkoutRoutes);
 
-// ✅ Default route
-app.get("/", (req, res) => {
-  res.json({ message: "SLRH Backend API is running 🚀" });
-});
+// ✅ Health/debug routes
+app.get("/debug/ping", (_req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get("/", (_req, res) => res.json({ message: "SLRH Backend API is running 🚀" }));
 
-// ✅ Export for Vercel
+// ✅ Export for Vercel (no app.listen)
 export default app;
 
-// ✅ Local only
+// ✅ Local development only
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 }
