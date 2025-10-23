@@ -76,15 +76,12 @@ const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) throw new Error("❌ Missing MONGO_URI in environment");
 
 mongoose
-  .connect(MONGO_URI, { dbName: "slrh" })
-  .then(() => {
-    console.log("✅ MongoDB connected");
-    const PORT = process.env.PORT || 3001;
-    app.listen(PORT, () => {
-      console.log(`🚀 SLRH backend running on port ${PORT}`);
-      console.log(`🌍 Allowed origins:`, ALLOWED_ORIGINS);
-    });
+  .connect(process.env.MONGO_URI, {
+    dbName: "slrh",
+    serverSelectionTimeoutMS: 15000, // ⏰ 15s
   })
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err.message));
+
 
 export default app;
