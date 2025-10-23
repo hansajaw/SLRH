@@ -113,10 +113,8 @@ await connectDB();
 /* -------------------- Export for Vercel & start for local -------------------- */
 export default app;
 
-// Only start a port locally. On Vercel, requests are handled by the platform.
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => {
-    console.log(`🚀 SLRH backend running on port ${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 }
+
