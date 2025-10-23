@@ -37,15 +37,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /* -------- Load stored auth on startup -------- */
   useEffect(() => {
     (async () => {
       try {
         const storedToken = await AsyncStorage.getItem("token");
         const storedUser = await AsyncStorage.getItem("user");
-
         console.log("🔄 Restoring session | Token:", !!storedToken, "| User:", !!storedUser);
-
         if (storedToken) {
           setToken(storedToken);
           api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
@@ -63,74 +60,61 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  /* -------- Signup -------- */
   async function signup(email: string, password: string, confirmPassword: string) {
     try {
-      const endpoint = "/api/v1/auth/signup";
-      console.log("📡 POST", api.defaults.baseURL + endpoint);
-      const { data } = await api.post(endpoint, { email, password, confirmPassword });
-
+      console.log("📡 POST", api.defaults.baseURL + "/auth/signup");
+      const { data } = await api.post("/auth/signup", { email, password, confirmPassword });
       setToken(data.token);
       setUser(data.user);
       api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-
       await AsyncStorage.setItem("token", data.token);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
-    } catch (err: any) {
-      console.error("❌ Signup error:", err.response?.data || err.message);
+    } catch (err) {
+      console.error("❌ Signup error:", err);
       throw err;
     }
   }
 
-  /* -------- Login -------- */
   async function login(email: string, password: string, remember: boolean = false) {
     try {
-      const endpoint = "/api/v1/auth/login";
-      console.log("📡 POST", api.defaults.baseURL + endpoint);
-      const { data } = await api.post(endpoint, { email, password });
-
+      console.log("📡 POST", api.defaults.baseURL + "/auth/login");
+      const { data } = await api.post("/auth/login", { email, password });
       setToken(data.token);
       setUser(data.user);
       api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-
       await AsyncStorage.setItem("token", data.token);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
       if (remember) await AsyncStorage.setItem("remember", "true");
-    } catch (err: any) {
-      console.error("❌ Login error:", err.response?.data || err.message);
+    } catch (err) {
+      console.error("❌ Login error:", err);
       throw err;
     }
   }
 
-  /* -------- Load profile -------- */
   async function loadMe() {
     try {
-      const endpoint = "/api/v1/users/me";
-      console.log("📡 GET", api.defaults.baseURL + endpoint);
-      const { data } = await api.get(endpoint);
+      console.log("📡 GET", api.defaults.baseURL + "/users/me");
+      const { data } = await api.get("/users/me");
       setUser(data.user);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
-    } catch (err: any) {
-      console.error("❌ LoadMe error:", err.response?.data || err.message);
+    } catch (err) {
+      console.error("❌ LoadMe error:", err);
       throw err;
     }
   }
 
-  /* -------- Update profile -------- */
   async function updateProfile(profile: Partial<User>) {
     try {
-      const endpoint = "/api/v1/users/me";
-      console.log("📡 PATCH", api.defaults.baseURL + endpoint);
-      const { data } = await api.patch(endpoint, profile);
+      console.log("📡 PATCH", api.defaults.baseURL + "/users/me");
+      const { data } = await api.patch("/users/me", profile);
       setUser(data.user);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
-    } catch (err: any) {
-      console.error("❌ Update profile error:", err.response?.data || err.message);
+    } catch (err) {
+      console.error("❌ Update profile error:", err);
       throw err;
     }
   }
 
-  /* -------- Update avatar -------- */
   async function updateAvatar(uri: string) {
     try {
       console.log("🖼️ Updating avatar:", uri);
@@ -143,20 +127,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  /* -------- Change password -------- */
   async function changePassword(oldPassword: string, newPassword: string) {
     try {
-      const endpoint = "/api/v1/users/change-password";
-      console.log("📡 POST", api.defaults.baseURL + endpoint);
-      await api.post(endpoint, { oldPassword, newPassword });
+      console.log("📡 POST", api.defaults.baseURL + "/users/change-password");
+      await api.post("/users/change-password", { oldPassword, newPassword });
       console.log("✅ Password changed successfully");
-    } catch (err: any) {
-      console.error("❌ Change password error:", err.response?.data || err.message);
+    } catch (err) {
+      console.error("❌ Change password error:", err);
       throw err;
     }
   }
 
-  /* -------- Logout -------- */
   async function logout() {
     try {
       console.log("🚪 Logging out...");
