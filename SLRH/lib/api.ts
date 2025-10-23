@@ -2,8 +2,6 @@
 import axios from "axios";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
-export { default } from "../utils/api";
-export * from "../utils/api";
 
 /**
  * Determine base URL priority:
