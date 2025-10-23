@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../utils/api";
+import { api } from "../lib/api"; // ✅ fixed import
 
 /* -------------------- Types -------------------- */
 type User = {
   _id?: string;
   email: string;
-  fullName?: string;  
+  fullName?: string;
   phone?: string;
   address1?: string;
   address2?: string;
@@ -64,9 +64,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /* -------- Signup -------- */
   async function signup(email: string, password: string, confirmPassword: string) {
     try {
-      console.log("Signing up with:", { email });
+      console.log("📡 POST", api.defaults.baseURL + "/auth/signup");
       const { data } = await api.post("/auth/signup", { email, password, confirmPassword });
-      console.log("Signup response:", { token: data.token.substring(0, 10) + "...", user: data.user });
       setToken(data.token);
       setUser(data.user);
       api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
@@ -81,9 +80,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /* -------- Login -------- */
   async function login(email: string, password: string, remember: boolean = false) {
     try {
-      console.log("Logging in with:", { email });
+      console.log("📡 POST", api.defaults.baseURL + "/auth/login");
       const { data } = await api.post("/auth/login", { email, password });
-      console.log("Login response:", { token: data.token.substring(0, 10) + "...", user: data.user });
       setToken(data.token);
       setUser(data.user);
       api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
@@ -99,9 +97,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /* -------- Load profile -------- */
   async function loadMe() {
     try {
-      console.log("Loading user profile...");
+      console.log("📡 GET", api.defaults.baseURL + "/users/me");
       const { data } = await api.get("/users/me");
-      console.log("Loaded user:", data.user);
       setUser(data.user);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
     } catch (err) {
@@ -113,9 +110,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /* -------- Update profile -------- */
   async function updateProfile(profile: Partial<User>) {
     try {
-      console.log("Updating profile with:", profile);
       const { data } = await api.patch("/users/me", profile);
-      console.log("Updated user:", data.user);
       setUser(data.user);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
     } catch (err) {
@@ -127,7 +122,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /* -------- Update avatar -------- */
   async function updateAvatar(uri: string) {
     try {
-      console.log("Updating avatar:", uri);
       setUser((prev) => (prev ? { ...prev, avatarUri: uri } : prev));
       const updated = { ...user, avatarUri: uri };
       await AsyncStorage.setItem("user", JSON.stringify(updated));
@@ -140,7 +134,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /* -------- Change password -------- */
   async function changePassword(oldPassword: string, newPassword: string) {
     try {
-      console.log("Changing password...");
       await api.post("/users/change-password", { oldPassword, newPassword });
       console.log("Password changed successfully");
     } catch (err) {
@@ -152,7 +145,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   /* -------- Logout -------- */
   async function logout() {
     try {
-      console.log("Logging out...");
       await AsyncStorage.multiRemove(["token", "user", "remember"]);
       setUser(null);
       setToken(null);
