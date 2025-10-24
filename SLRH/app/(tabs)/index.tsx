@@ -322,7 +322,7 @@ function Section({
           <View style={styles.sectionUnderline} />
         </View>
         <Pressable onPress={onPress} style={styles.viewAllBtn}>
-          <Text style={styles.viewAll}>View All →</Text>
+          <Text style={styles.viewAll}>View All</Text>
         </Pressable>
       </View>
       {children}

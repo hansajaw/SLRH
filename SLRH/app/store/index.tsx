@@ -3,15 +3,14 @@ import {
   View,
   Text,
   Image,
-  StyleSheet,
+  ScrollView,
   Pressable,
   ActivityIndicator,
-  ScrollView,
+  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TopBar from "../../components/TopBar";
-import { useCart } from "../../context/CartContext";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3001";
 
@@ -20,197 +19,132 @@ type Product = {
   title: string;
   price: number;
   image?: string;
-  description?: string;
-  quantity: number;
-  rating?: number;
   category?: string;
+  rating?: number;
+  quantity: number;
 };
 
-export default function ProductScreen() {
+export default function StoreScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-
-  const { addToCart } = useCart();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [errorText, setErrorText] = useState<string>("");
-
-  async function load() {
-    if (!id) return;
-    try {
-      setLoading(true);
-      setErrorText("");
-      const res = await fetch(`${BASE}/api/v1/products/${id}`);
-      if (!res.ok) {
-        const msg = `Failed to load product (${res.status})`;
-        setErrorText(msg);
-        setProduct(null);
-        return;
-      }
-      const j = (await res.json()) as { item?: Product };
-      if (!j?.item) {
-        setErrorText("Product not found.");
-        setProduct(null);
-        return;
-      }
-      setProduct(j.item);
-    } catch (e) {
-      setErrorText("Network error loading product.");
-      setProduct(null);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    load();
-  }, [id]);
-
-  const renderStars = (rating?: number) => {
-    const r = Math.max(0, Math.min(5, Math.floor(rating ?? 0)));
-    return (
-      <Text style={{ color: "#FFD700", fontSize: 13, fontWeight: "700" }}>
-        {"★".repeat(r)}
-        {"☆".repeat(5 - r)} {rating ? rating.toFixed(1) : "4.5"}
-      </Text>
-    );
-  };
+    (async () => {
+      try {
+        const res = await fetch(`${BASE}/api/v1/products`);
+        const text = await res.text();
+        console.log("Products response:", text);
+        const j = JSON.parse(text);
+        if (Array.isArray(j.items)) {
+          setProducts(j.items);
+        } else {
+          setError("Invalid data format");
+        }
+      } catch (e) {
+        console.error("Error loading products:", e);
+        setError("Network error");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   if (loading) {
     return (
-      <SafeAreaView style={s.safe}>
-        <TopBar
-          title="Product"
-          showBack
-          showMenu={false}
-          showSearch={false}
-          showProfile={false}
-          onBackPress={() => router.canGoBack() ? router.back() : router.replace("/store")}
-        />
-        <View style={s.center}>
+      <SafeAreaView style={styles.safe}>
+        <TopBar title="SLRH Store" showBack={false} />
+        <View style={styles.center}>
           <ActivityIndicator color="#00E0C6" size="large" />
-          <Text style={{ color: "#9ca3af", marginTop: 10 }}>Loading…</Text>
+          <Text style={{ color: "#9ca3af", marginTop: 10 }}>Loading products...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  if (!product) {
+  if (error) {
     return (
-      <SafeAreaView style={s.safe}>
-        <TopBar
-          title="Product"
-          showBack
-          showMenu={false}
-          showSearch={false}
-          showProfile={false}
-          onBackPress={() => router.canGoBack() ? router.back() : router.replace("/store")}
-        />
-        <View style={s.center}>
-          <Text style={{ color: "#e5e7eb", fontWeight: "800", fontSize: 16 }}>
-            {errorText || "Product not found."}
-          </Text>
-          <Pressable style={[s.addBtn, { marginTop: 16 }]} onPress={() => router.replace("/store")}>
-            <Text style={s.addText}>Back to Store</Text>
-          </Pressable>
+      <SafeAreaView style={styles.safe}>
+        <TopBar title="SLRH Store" showBack={false} />
+        <View style={styles.center}>
+          <Text style={{ color: "#ff6666", fontWeight: "600" }}>{error}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const outOfStock = product.quantity <= 0;
+  if (!products.length) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <TopBar title="SLRH Store" showBack={false} />
+        <View style={styles.center}>
+          <Text style={{ color: "#fff" }}>No products available</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={s.safe}>
-      <TopBar
-        title="SLRH Store"
-        showBack
-        showMenu={false}
-        showSearch={false}
-        showProfile={false}
-        onBackPress={() => router.canGoBack() ? router.back() : router.replace("/store")}
-      />
+    <SafeAreaView style={styles.safe}>
+      <TopBar title="SLRH Store" showBack={false} />
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.header}>Available Products</Text>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        <Image
-          source={{ uri: product.image || "https://via.placeholder.com/800x600?text=SLRH" }}
-          style={s.hero}
-        />
-
-        <View style={[s.rowBetween, { marginTop: 12 }]}>
-          <Text style={s.title}>{product.title}</Text>
-          {renderStars(product.rating)}
-        </View>
-
-        <Text style={s.price}>Rs. {product.price.toLocaleString()}</Text>
-        <Text
-          style={{
-            color: outOfStock ? "#FF6347" : "#7CFC00",
-            fontSize: 12,
-            marginTop: 6,
-          }}
-        >
-          {outOfStock ? "Out of Stock" : `In Stock (${product.quantity})`}
-        </Text>
-
-        {product.description ? (
-          <Text style={s.desc}>{product.description}</Text>
-        ) : null}
-
-        <View style={{ marginTop: 18, gap: 10 }}>
-          <Pressable
-            style={[s.addBtn, outOfStock && { backgroundColor: "#333" }]}
-            disabled={outOfStock}
-            onPress={() =>
-              addToCart({
-                id: product._id,
-                title: product.title,
-                price: product.price,
-                image: product.image,
-                rating: product.rating ?? 0,
-              })
-            }
-          >
-            <Text style={[s.addText, outOfStock && { color: "#888" }]}>
-              {outOfStock ? "Out of Stock" : "Add to Cart"}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[s.buyNowBtn, outOfStock && { backgroundColor: "#333" }]}
-            disabled={outOfStock}
-            onPress={() => router.push("/checkout")}
-          >
-            <Text style={[s.buyNowText, outOfStock && { color: "#888" }]}>
-              Buy Now
-            </Text>
-          </Pressable>
+        <View style={styles.grid}>
+          {products.map((p) => (
+            <Pressable
+              key={p._id}
+              style={styles.card}
+              onPress={() => router.push(`/store/${p._id}`)} // ✅ FIXED navigation ID
+            >
+              <Image
+                source={{
+                  uri: p.image || "https://via.placeholder.com/400x400?text=SLRH",
+                }}
+                style={styles.image}
+              />
+              <Text style={styles.title}>{p.title}</Text>
+              <Text style={styles.price}>Rs. {p.price.toLocaleString()}</Text>
+              <Text style={styles.stock}>
+                {p.quantity > 0 ? "🟢 In stock" : "🔴 Out of stock"}
+              </Text>
+            </Pressable>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
+const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 16 },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  hero: { width: "100%", height: 280, borderRadius: 12, backgroundColor: "#151515" },
-  title: { color: "#fff", fontSize: 22, fontWeight: "800", flex: 1, paddingRight: 10 },
-  price: { color: "#00E0C6", fontWeight: "800", fontSize: 18, marginTop: 6 },
-  desc: { color: "#b8c0c7", fontSize: 14, lineHeight: 20, marginTop: 10 },
-  addBtn: {
-    backgroundColor: "#00E0C6",
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  container: { padding: 16 },
+  header: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "900",
+    marginBottom: 10,
+    textAlign: "center",
   },
-  addText: { color: "#0b0b0b", fontWeight: "900", fontSize: 16 },
-  buyNowBtn: {
-    backgroundColor: "#ff3333",
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 12,
   },
-  buyNowText: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  card: {
+    width: "47%",
+    backgroundColor: "#111",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#1f1f1f",
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  image: { width: "100%", height: 140, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
+  title: { color: "#fff", fontSize: 15, fontWeight: "700", marginTop: 6, paddingHorizontal: 6 },
+  price: { color: "#00E0C6", fontWeight: "900", marginTop: 2, paddingHorizontal: 6 },
+  stock: { color: "#9ca3af", fontSize: 12, padding: 6, marginBottom: 4 },
 });

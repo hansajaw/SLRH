@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,11 +24,11 @@ type Product = {
   price: number;
   image?: any;
   rating?: number;
-  eta?: string;      
+  eta?: string;
   discount?: number;
   description?: string;
   category?: string;
-  quantity: number;   
+  quantity: number;
 };
 
 const asSrc = (img: any) => (typeof img === "string" ? { uri: img } : img);
@@ -39,17 +40,26 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
 
   const [p, setP] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [errorText, setErrorText] = useState("");
 
   async function load() {
     if (!id) return;
     setLoading(true);
+    setErrorText("");
     try {
       const res = await fetch(`${BASE}/api/v1/products/${id}`);
+      if (!res.ok) {
+        setErrorText(`Error ${res.status}: Unable to load product`);
+        setP(null);
+        return;
+      }
       const j = await res.json();
       setP(j.item ?? null);
     } catch (e) {
       console.error("product load error:", e);
+      setErrorText("Network error while loading product.");
+      setP(null);
     } finally {
       setLoading(false);
     }
@@ -95,7 +105,7 @@ export default function ProductDetail() {
     }
   }
 
-  if (loading || !p) {
+  if (loading) {
     return (
       <SafeAreaView style={s.safe}>
         <TopBar
@@ -108,8 +118,37 @@ export default function ProductDetail() {
             router.canGoBack() ? router.back() : router.push("/store" as any)
           }
         />
-        <View style={{ padding: 16 }}>
-          <Text style={{ color: "#9ca3af" }}>{loading ? "Loading…" : "Not found"}</Text>
+        <View style={s.center}>
+          <ActivityIndicator color="#00E0C6" size="large" />
+          <Text style={{ color: "#9ca3af", marginTop: 10 }}>Loading…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!p) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <TopBar
+          title="Product"
+          showBack
+          showMenu={false}
+          showSearch={false}
+          showProfile={false}
+          onBackPress={() =>
+            router.canGoBack() ? router.back() : router.push("/store" as any)
+          }
+        />
+        <View style={s.center}>
+          <Text style={{ color: "#e5e7eb", fontSize: 16, fontWeight: "800" }}>
+            {errorText || "Product not found."}
+          </Text>
+          <Pressable
+            onPress={() => router.replace("/store" as any)}
+            style={[s.addBtn, { marginTop: 20 }]}
+          >
+            <Text style={s.addText}>Back to Store</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -132,7 +171,6 @@ export default function ProductDetail() {
       />
 
       <ScrollView contentContainerStyle={s.container}>
-        {/* Product image */}
         {!!p.image && (
           <View style={{ position: "relative" }}>
             <Image source={asSrc(p.image)} style={s.image} />
@@ -141,7 +179,6 @@ export default function ProductDetail() {
         )}
 
         <View style={s.card}>
-          {/* Title + stars */}
           <View style={s.rowBetween}>
             <Text style={s.title}>{p.title}</Text>
             <View style={s.stars}>
@@ -158,18 +195,13 @@ export default function ProductDetail() {
             </View>
           </View>
 
-          <Text style={s.price}>
-            {fmt(p.price)}
-            {p.discount ? <Text style={s.discount}>   −{p.discount}%</Text> : null}
-          </Text>
+          <Text style={s.price}>{fmt(p.price)}</Text>
 
           <View style={s.metaRow}>
             <Text style={[s.badge, out && { color: "#ef4444" }]}>
               {out ? "🔴 Out of stock" : "🟢 In stock"}
             </Text>
-            {typeof p.quantity === "number" && !out ? (
-              <Text style={s.meta}>Qty: {p.quantity}</Text>
-            ) : null}
+            {!out && <Text style={s.meta}>Qty: {p.quantity}</Text>}
             <Text style={s.meta}>🕒 {p.eta ?? "2–5 days"}</Text>
             <Text style={s.meta}>🚚 Delivered</Text>
           </View>
@@ -203,6 +235,7 @@ export default function ProductDetail() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   container: { padding: 16, paddingBottom: 50 },
   image: { width: "100%", height: 250, borderRadius: 14, marginBottom: 12 },
   gradientOverlay: {
@@ -221,13 +254,22 @@ const s = StyleSheet.create({
     borderColor: "#1a1a1a",
     padding: 16,
   },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   title: { color: "#fff", fontSize: 20, fontWeight: "900" },
   stars: { flexDirection: "row", alignItems: "center" },
   ratingText: { color: "#FFD700", marginLeft: 4, fontWeight: "700" },
   price: { color: "#00E0C6", fontWeight: "900", fontSize: 18, marginTop: 6 },
-  discount: { color: "#9aa0a6", fontSize: 13, fontWeight: "700" },
-  metaRow: { flexDirection: "row", alignItems: "center", marginTop: 6, flexWrap: "wrap", gap: 8 },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    flexWrap: "wrap",
+    gap: 8,
+  },
   badge: {
     color: "#00E0C6",
     fontSize: 12,

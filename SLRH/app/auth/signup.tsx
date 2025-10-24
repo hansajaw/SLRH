@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AxiosError } from "axios";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
-import api from "../../utils/api";
+import { api } from "../../lib/api";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -47,11 +47,12 @@ export default function Signup() {
     try {
       setLoading(true);
       console.log("Sending signup request to:", `${api.defaults.baseURL}/auth/signup`);
-      const { data } = await api.post("/api/v1/auth/signup", {
+      const { data } = await api.post("/auth/signup", {
         email: email.trim(),
         password: pw,
         confirmPassword: pw2,
       });
+
       console.log("Signup successful, logging in...");
       await login(email.trim(), pw, true);
       console.log("Navigating to profile setup");

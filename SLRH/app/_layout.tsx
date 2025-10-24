@@ -72,7 +72,7 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, [router, segments]);
 
-  if (!fontsLoaded) return null; // ⏳ Wait for Ionicons to load
+  if (!fontsLoaded) return null; 
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

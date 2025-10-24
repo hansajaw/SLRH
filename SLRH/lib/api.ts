@@ -1,19 +1,20 @@
+// lib/api.ts
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Constants from "expo-constants";
 import { Platform, Alert } from "react-native";
 
-/* -------------------- Environment URLs -------------------- */
+/* -------------------- Base URLs -------------------- */
 const PROD_URL = "https://slrh-4cql.vercel.app/api/v1";
 const LOCAL_ANDROID = "http://10.0.2.2:3001/api/v1";
 const LOCAL_IOS = "http://localhost:3001/api/v1";
 
-let baseURL = PROD_URL;
-
-// Use local API only when developing
-if (__DEV__) {
-  baseURL = Platform.OS === "android" ? LOCAL_ANDROID : LOCAL_IOS;
-}
+// Use local API only while developing
+const baseURL =
+  __DEV__
+    ? Platform.OS === "android"
+      ? LOCAL_ANDROID
+      : LOCAL_IOS
+    : PROD_URL;
 
 console.log("🌍 Using API base URL:", baseURL);
 
@@ -30,9 +31,16 @@ api.interceptors.request.use(
     const token = await AsyncStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(`➡️ [REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url} | Token: ${token.substring(0, 10)}...`);
+      console.log(
+        `➡️ [REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url} | Token: ${token.substring(
+          0,
+          10
+        )}...`
+      );
     } else {
-      console.log(`➡️ [REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url} | No token`);
+      console.log(
+        `➡️ [REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url} | No token`
+      );
     }
     return config;
   },
@@ -52,8 +60,8 @@ api.interceptors.response.use(
     if (error.code === "ECONNABORTED" || error.message === "Network Error") {
       console.warn("⚠️ [NETWORK WARNING] Server unreachable or offline");
       Alert.alert(
-        "Connection Error",
-        "Cannot reach the server. Please ensure the backend is running on http://10.0.2.2:3001 and check your network."
+        "Network Error",
+        "Cannot reach the server. Please check your Internet connection or try again later."
       );
     }
 
@@ -62,9 +70,9 @@ api.interceptors.response.use(
       console.error(`❌ [API ERROR ${status}]`, data);
 
       if (status === 401) {
-        Alert.alert("Unauthorized", "Session expired. Please log in again.");
+        Alert.alert("Unauthorized", "Your session has expired. Please log in again.");
       } else if (status === 404) {
-        Alert.alert("Not Found", data?.message || "Requested resource not found. Check if the backend routes are correctly configured.");
+        Alert.alert("Not Found", data?.message || "Requested resource not found.");
       } else if (status >= 500) {
         Alert.alert("Server Error", data?.message || "The server encountered an error. Try again later.");
       }
