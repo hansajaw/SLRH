@@ -15,7 +15,10 @@ import TopBar from "../../components/TopBar";
 import { useCart } from "../../context/CartContext";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3001";
+const BASE =
+  process.env.EXPO_PUBLIC_API_URL ||
+  (__DEV__ ? "http://192.168.1.5:3001" : "https://slrh-4cql.vercel.app");
+
 
 type Product = {
   _id: string;

@@ -12,7 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import TopBar from "../../components/TopBar";
 import { useRouter } from "expo-router";
 
-const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3001";
+const BASE =
+  process.env.EXPO_PUBLIC_API_URL ||
+  (__DEV__ ? "http://192.168.1.5:3001" : "https://slrh-4cql.vercel.app");
+// ⚠️ Replace 192.168.1.5 with YOUR computer’s IPv4 if testing locally
 
 type Product = {
   _id: string;
@@ -34,17 +37,16 @@ export default function StoreScreen() {
     (async () => {
       try {
         const res = await fetch(`${BASE}/api/v1/products`);
-        const text = await res.text();
-        console.log("Products response:", text);
-        const j = JSON.parse(text);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const j = await res.json();
         if (Array.isArray(j.items)) {
           setProducts(j.items);
         } else {
-          setError("Invalid data format");
+          throw new Error("Invalid data format");
         }
       } catch (e) {
         console.error("Error loading products:", e);
-        setError("Network error");
+        setError("Network error. Please check your connection.");
       } finally {
         setLoading(false);
       }
@@ -57,7 +59,9 @@ export default function StoreScreen() {
         <TopBar title="SLRH Store" showBack={false} />
         <View style={styles.center}>
           <ActivityIndicator color="#00E0C6" size="large" />
-          <Text style={{ color: "#9ca3af", marginTop: 10 }}>Loading products...</Text>
+          <Text style={{ color: "#9ca3af", marginTop: 10 }}>
+            Loading products...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -90,17 +94,18 @@ export default function StoreScreen() {
       <TopBar title="SLRH Store" showBack={false} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Available Products</Text>
-
         <View style={styles.grid}>
           {products.map((p) => (
             <Pressable
               key={p._id}
               style={styles.card}
-              onPress={() => router.push(`/store/${p._id}`)} // ✅ FIXED navigation ID
+              onPress={() => router.push(`/store/${p._id}`)}
             >
               <Image
                 source={{
-                  uri: p.image || "https://via.placeholder.com/400x400?text=SLRH",
+                  uri:
+                    p.image ||
+                    "https://via.placeholder.com/400x400?text=SLRH",
                 }}
                 style={styles.image}
               />
@@ -143,8 +148,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: "hidden",
   },
-  image: { width: "100%", height: 140, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
-  title: { color: "#fff", fontSize: 15, fontWeight: "700", marginTop: 6, paddingHorizontal: 6 },
-  price: { color: "#00E0C6", fontWeight: "900", marginTop: 2, paddingHorizontal: 6 },
+  image: {
+    width: "100%",
+    height: 140,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  title: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 6,
+    paddingHorizontal: 6,
+  },
+  price: {
+    color: "#00E0C6",
+    fontWeight: "900",
+    marginTop: 2,
+    paddingHorizontal: 6,
+  },
   stock: { color: "#9ca3af", fontSize: 12, padding: 6, marginBottom: 4 },
 });
