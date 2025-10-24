@@ -1,8 +1,8 @@
 import express from "express";
-import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 
+// routes
 import productsRouter from "./routes/products.js";
 import cartRouter from "./routes/cart.js";
 import checkoutRouter from "./routes/checkout.js";
@@ -10,25 +10,22 @@ import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
 import mediaRouter from "./routes/media.js";
 
+import { connectDB } from "./db.js";
+
 dotenv.config();
 
 const app = express();
 
-if (!process.env.MONGO_URI) {
-  console.error("❌ MONGO_URI is not defined in environment");
-  process.exit(1);
-}
+/* ------------ Env sanity ------------ */
 if (!process.env.JWT_SECRET) {
-  console.error("❌ JWT_SECRET is not defined in environment");
-  process.exit(1);
+  console.error("❌ JWT_SECRET is not defined");
+  // in Vercel we shouldn’t exit synchronously; let request return 500 instead.
 }
-console.log("✅ Environment variables loaded:", {
-  MONGO_URI: process.env.MONGO_URI.substring(0, 30) + "...",
-  JWT_SECRET: process.env.JWT_SECRET.substring(0, 10) + "...",
-  CORS_ORIGIN: process.env.CORS_ORIGIN,
-  PORT: process.env.PORT || 3001,
-});
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is not defined");
+}
 
+/* ------------ CORS ------------ */
 const ALLOWED_ORIGINS = [
   "http://localhost:19006",
   "http://10.0.2.2:19006",
@@ -37,13 +34,14 @@ const ALLOWED_ORIGINS = [
   "https://slrh.vercel.app",
 ];
 if (process.env.CORS_ORIGIN) {
-  const extra = process.env.CORS_ORIGIN.split(",").map((s) => s.trim());
-  ALLOWED_ORIGINS.push(...extra);
+  ALLOWED_ORIGINS.push(
+    ...process.env.CORS_ORIGIN.split(",").map((s) => s.trim())
+  );
 }
 app.use(
   cors({
     origin: (origin, cb) => {
-      console.log("🔎 CORS check for origin:", origin);
+      // Native apps have `origin === null`
       if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
       console.warn("🚫 Blocked by CORS:", origin);
       cb(new Error("Not allowed by CORS"));
@@ -54,8 +52,10 @@ app.use(
 
 app.use(express.json({ limit: "1mb" }));
 
-console.log("✅ Mounting routes...");
-console.log("🔗 Auth routes:", authRouter.stack.map(r => `${r.route.path} (${r.route.stack[0].method})`));
+/* ------------ DB connect once on cold start ------------ */
+await connectDB();
+
+/* ------------ Routes ------------ */
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/products", productsRouter);
@@ -63,35 +63,36 @@ app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/checkout", checkoutRouter);
 app.use("/api/v1/media", mediaRouter);
 
-app.get("/debug/ping", (_req, res) => res.json({ ok: true, ts: Date.now() }));
+/* ------------ Health & debug ------------ */
 app.get("/", (_req, res) => res.send("✅ SLRH Backend API is running 🚀"));
-app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));
+app.get("/debug/ping", (_req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get("/debug/db", async (_req, res) => {
+  try {
+    const conn = await connectDB();
+    const state = conn.connection.readyState; // 1 = connected
+    res.json({ connected: state === 1, state });
+  } catch (e) {
+    res.status(500).json({ connected: false, error: e?.message });
+  }
+});
 
+/* ------------ 404 & errors ------------ */
 app.use((req, res) => {
-  console.warn(`🚫 404: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
+  res.status(404).json({
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
 });
 app.use((err, _req, res, _next) => {
-  console.error("🔥 Uncaught error:", err.message, err.stack);
+  console.error("🔥 Uncaught error:", err?.message);
   res.status(500).json({ message: err?.message || "Internal server error" });
 });
 
-mongoose
-  .connect(process.env.MONGO_URI, {
-    dbName: "slrh",
-    serverSelectionTimeoutMS: 15000, // ⏰ 15s
-  })
-  .then(() => {
-    console.log("✅ MongoDB connected");
-    const PORT = process.env.PORT || 3001;
-    app.listen(PORT, () => {
-      console.log(`🚀 SLRH backend running on port ${PORT}`);
-      console.log(`Health check available at http://localhost:${PORT}/healthz`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err.message, err.stack);
-    process.exit(1);
+/* ------------ Local only: start server ------------ */
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`🚀 SLRH backend running on http://localhost:${PORT}`);
   });
+}
 
 export default app;
