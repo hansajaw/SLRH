@@ -1,4 +1,3 @@
-// app/settings/security.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -12,7 +11,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import api from "../../utils/api"; // your axios instance with token
+import api from "../../utils/api"; 
 
 export default function SecuritySettings() {
   const insets = useSafeAreaInsets();

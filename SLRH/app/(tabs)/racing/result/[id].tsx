@@ -1,4 +1,3 @@
-// app/racing/result/[id].tsx
 import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { getResults } from "../../../data/events";

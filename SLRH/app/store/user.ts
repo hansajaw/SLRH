@@ -10,7 +10,7 @@ export type UserProfile = {
   address2?: string;
   city?: string;
   zip?: string;
-  avatarUri?: string; // stored as file:// or content:// uri
+  avatarUri?: string;
 };
 
 type UserState = {
@@ -24,7 +24,6 @@ type UserState = {
 export const useUser = create<UserState>()(
   persist(
     (set, get) => ({
-      // seed with a sample user once; you can start with null if you want a login gate
       me: {
         fullName: "Dulneth Hansaja Wickrama",
         email: "wickramahansaja@gmail.com",

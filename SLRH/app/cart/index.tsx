@@ -100,10 +100,8 @@ export default function CartScreen() {
   const { items, removeFromCart, total } = cart;
   const updateQuantity: ((id: any, qty: number) => void) | undefined = cart?.updateQuantity;
 
-  // live stocks map
   const [stocks, setStocks] = useState<Record<string, number>>({});
 
-  // fetch latest stock for all items present
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -121,7 +119,6 @@ export default function CartScreen() {
           setStocks(m);
         }
       } catch (e) {
-        // ignore; fallback: no stock caps
       }
     })();
     return () => {
@@ -129,7 +126,6 @@ export default function CartScreen() {
     };
   }, [items]);
 
-  // money math
   const subTotal = useMemo(
     () => items.reduce((sum: number, it: any) => sum + it.price * it.quantity, 0),
     [items]
@@ -153,11 +149,11 @@ export default function CartScreen() {
       updateQuantity(id, next);
       return;
     }
-    // graceful fallback if your context doesn’t have updateQuantity:contentReference[oaicite:4]{index=4}
+
     const item = items.find((i: any) => i.id === id);
     if (!item) return;
     removeFromCart(id);
-    cart.addToCart?.({ ...item, quantity: next }); // uses your existing addToCart API
+    cart.addToCart?.({ ...item, quantity: next }); 
   };
 
   return (
@@ -207,7 +203,6 @@ export default function CartScreen() {
               />
             ))}
 
-            {/* Summary */}
             <View style={st.summary}>
               <Row label="Subtotal" value={`Rs. ${subTotal.toLocaleString()}`} />
               <Row label="Delivery Fee" value={`Rs. ${deliveryFee.toLocaleString()}`} />
@@ -219,7 +214,6 @@ export default function CartScreen() {
         )}
       </ScrollView>
 
-      {/* Sticky Buy Now Bar */}
       {items.length > 0 && (
         <View style={[st.buyBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
           <View>

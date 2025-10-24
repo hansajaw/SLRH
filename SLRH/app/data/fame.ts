@@ -1,4 +1,3 @@
-// app/data/fame.ts
 import type { Fame } from "./type";
 
 export const FAMES: Fame[] = [
@@ -18,7 +17,7 @@ export const FAMES: Fame[] = [
     portrait: require("../../assets/players/manel.jpg"),
     summary: "Back-to-back sprint victories and fan-favorite.",
   },
-  // add more inductees…
+
 ];
 
 export const getFames = () => FAMES;

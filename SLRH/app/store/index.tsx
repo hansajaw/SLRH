@@ -64,7 +64,6 @@ export default function ProductScreen() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const renderStars = (rating?: number) => {
@@ -133,19 +132,16 @@ export default function ProductScreen() {
       />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {/* Image */}
         <Image
           source={{ uri: product.image || "https://via.placeholder.com/800x600?text=SLRH" }}
           style={s.hero}
         />
 
-        {/* Title & Rating */}
         <View style={[s.rowBetween, { marginTop: 12 }]}>
           <Text style={s.title}>{product.title}</Text>
           {renderStars(product.rating)}
         </View>
 
-        {/* Price & Stock */}
         <Text style={s.price}>Rs. {product.price.toLocaleString()}</Text>
         <Text
           style={{
@@ -157,12 +153,10 @@ export default function ProductScreen() {
           {outOfStock ? "Out of Stock" : `In Stock (${product.quantity})`}
         </Text>
 
-        {/* Description */}
         {product.description ? (
           <Text style={s.desc}>{product.description}</Text>
         ) : null}
 
-        {/* Action buttons */}
         <View style={{ marginTop: 18, gap: 10 }}>
           <Pressable
             style={[s.addBtn, outOfStock && { backgroundColor: "#333" }]}

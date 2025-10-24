@@ -5,7 +5,6 @@ import protect from "../middleware/auth.js";
 
 const router = express.Router();
 
-// GET current user
 router.get("/me", protect, async (req, res) => {
   try {
     res.json({ user: req.user });
@@ -15,7 +14,6 @@ router.get("/me", protect, async (req, res) => {
   }
 });
 
-// PATCH update profile
 router.patch("/me", protect, async (req, res) => {
   try {
     const updated = await User.findByIdAndUpdate(req.user.id, req.body, { new: true });
@@ -26,7 +24,6 @@ router.patch("/me", protect, async (req, res) => {
   }
 });
 
-// POST change password
 router.post("/change-password", protect, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;

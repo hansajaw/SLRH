@@ -46,8 +46,8 @@ export default function Signup() {
 
     try {
       setLoading(true);
-      console.log("Sending signup request:", { email });
-      await api.post("/auth/signup", {
+      console.log("Sending signup request to:", `${api.defaults.baseURL}/auth/signup`);
+      const { data } = await api.post("/auth/signup", {
         email: email.trim(),
         password: pw,
         confirmPassword: pw2,
@@ -58,6 +58,7 @@ export default function Signup() {
       router.push({ pathname: "/auth/profile-setup", params: { email } });
     } catch (error) {
       const e = error as AxiosError<{ message?: string }>;
+      console.log("Full error response:", e); // Log full error for debugging
       console.error("Signup error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ||

@@ -3,7 +3,7 @@ import { View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = PropsWithChildren<{
-  bg?: string; // screen background (also fills status/gesture areas)
+  bg?: string; 
   contentStyle?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
 }>;

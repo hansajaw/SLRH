@@ -49,11 +49,9 @@ type RaceEvent = {
 };
 type Item = Driver | Team | RaceEvent;
 
-/* ---------- Import your data files ---------- */
 import * as PeopleDataFile from "../data/people";
 import * as RacingDataFile from "../data/racing";
 
-/* Helpers */
 const asSrc = (s?: string | ImageSourcePropType) =>
   typeof s === "string" ? { uri: s } : (s as ImageSourcePropType);
 
@@ -80,7 +78,6 @@ function normalizeTeams(raw: any[]): Team[] {
   }));
 }
 
-/* ⭐ NEW: normalize events FROM racing schedule (scheduledAt -> dateISO) */
 function normalizeEventsFromSchedule(schedule: any[]): RaceEvent[] {
   return (schedule || []).map((e: any, i: number): RaceEvent => ({
     id: String(e.id ?? e._id ?? e.slug ?? `evt-${i}`),
@@ -89,14 +86,11 @@ function normalizeEventsFromSchedule(schedule: any[]): RaceEvent[] {
     city: e.city ?? e.location?.city ?? undefined,
     circuit: e.circuit ?? undefined,
     banner: asSrc(e.banner ?? e.heroImage ?? e.image ?? e.img),
-    // rating is optional; your DB may not have it for schedule rows
     rating: e.rating ?? e.averageRating ?? e.avgRating ?? undefined,
   }));
 }
 
-/* Read from files (arrays or getters) */
 function useConnectedData() {
-  // People
   let rawDrivers: any[] = [];
   let rawTeams: any[] = [];
   if (typeof (PeopleDataFile as any).getPeopleData === "function") {
@@ -108,7 +102,6 @@ function useConnectedData() {
     rawTeams = (PeopleDataFile as any).teams ?? (PeopleDataFile as any).TEAMS ?? [];
   }
 
-  // Racing — use schedule (events)
   let schedule: any[] = [];
   if (typeof (RacingDataFile as any).getRacingData === "function") {
     const g = (RacingDataFile as any).getRacingData() || {};
@@ -124,7 +117,6 @@ function useConnectedData() {
   };
 }
 
-/* ---------- Tabs etc. ---------- */
 type TabKey = "Drivers & Riders" | "Race Events" | "Racing Teams";
 const TABS = ["Drivers & Riders", "Race Events", "Racing Teams"] as const;
 
@@ -134,7 +126,6 @@ const CARD_W = Math.max(300, W - PAD * 2);
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
-/* ======================= Screen ======================= */
 export default function RatingsScreen() {
   const { drivers: ALL_DRIVERS, teams: ALL_TEAMS, events: ALL_EVENTS } = useConnectedData();
 
@@ -168,7 +159,7 @@ export default function RatingsScreen() {
     );
   }, [ALL_EVENTS, query]);
 
-  const totalRatings = (ALL_DRIVERS.length + ALL_TEAMS.length + ALL_EVENTS.length) * 3; // placeholder
+  const totalRatings = (ALL_DRIVERS.length + ALL_TEAMS.length + ALL_EVENTS.length) * 3; 
 
   const ListHeader = (
     <View>
@@ -252,7 +243,6 @@ export default function RatingsScreen() {
   );
 }
 
-/* ---------- Small UI pieces ---------- */
 function StatBox({ label, value }: { label: string; value: number }) {
   return (
     <View style={st.statBox}>
@@ -377,7 +367,6 @@ function EventCard({ item, width, onRate }: { item: RaceEvent; width: number; on
   );
 }
 
-/* ---------- Styles ---------- */
 const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
 
@@ -417,7 +406,6 @@ const st = StyleSheet.create({
   },
   resetTxt: { color: "#C6FFF4", fontWeight: "900" },
 
-  /* Driver card */
   card: {
     marginHorizontal: PAD, backgroundColor: "#111827", borderRadius: 16,
     borderWidth: 1, borderColor: "#1f2937", overflow: "hidden"
@@ -438,7 +426,6 @@ const st = StyleSheet.create({
   pillBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 },
   pillText: { fontWeight: "900" },
 
-  /* Team row card */
   teamCard: {
     marginHorizontal: PAD, flexDirection: "row", gap: 12, alignItems: "center",
     backgroundColor: "#111827", borderRadius: 16, borderWidth: 1, borderColor: "#1f2937", padding: 12
@@ -447,7 +434,6 @@ const st = StyleSheet.create({
   rateChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: "#00E0C6", flexDirection: "row", alignItems: "center", gap: 6 },
   rateChipTxt: { color: "#001212", fontWeight: "900" },
 
-  /* Event card */
   eventCard: { marginHorizontal: PAD, borderRadius: 16, overflow: "hidden", backgroundColor: "#141414" },
   eventImg: { width: "100%", height: 170, backgroundColor: "#0f0f0f" },
   eventShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.25)" },

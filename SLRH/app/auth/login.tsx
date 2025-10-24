@@ -38,7 +38,7 @@ export default function Login() {
       console.log("Attempting login:", { email });
       await login(email.trim(), password.trim(), remember);
       Alert.alert("Welcome", "Logged in successfully!");
-      router.replace("/(tabs)"); // Fixed to navigate to tabs route
+      router.replace("/(tabs)"); 
     } catch (e: any) {
       console.error("Login error:", e?.response?.data || e?.message || e);
       const message =

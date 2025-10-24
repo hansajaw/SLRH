@@ -1,4 +1,3 @@
-// app/(tabs)/racing/[id].tsx
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text, Image, Pressable, ScrollView, StyleSheet } from "react-native";
@@ -6,7 +5,6 @@ import SafeScreen from "../../../components/SafeScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { getAllEvents, type Event } from "../../data/events";
 
-/* -------------------- Countdown -------------------- */
 function computeRemaining(target: Date) {
   const diff = +target - +new Date();
   if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0 };
@@ -39,7 +37,6 @@ function CountdownTimer({ targetDate }: { targetDate: Date }) {
   );
 }
 
-/* -------------------- Screen -------------------- */
 export default function EventDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -119,7 +116,6 @@ export default function EventDetails() {
   );
 }
 
-/* -------------------- styles -------------------- */
 const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", padding: 16, paddingTop: 12 },
   backBtn: {
@@ -140,7 +136,6 @@ const styles = StyleSheet.create({
   sectionTitle: { color: "#00E0C6", fontWeight: "800", marginBottom: 8 },
   desc: { color: "#ddd", lineHeight: 20, marginBottom: 20 },
 
-  /* Countdown */
   countRow: { flexDirection: "row", justifyContent: "space-between", gap: 6, marginTop: 10 },
   countBlock: { alignItems: "center", width: 62, paddingVertical: 6, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 12 },
   countValue: { color: "#fff", fontSize: 20, fontWeight: "800" },

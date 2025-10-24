@@ -5,9 +5,9 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-// Helper: sign JWT token
 function signToken(id) {
   if (!process.env.JWT_SECRET) {
+    console.error("❌ JWT_SECRET is not set");
     throw new Error("JWT_SECRET is not set");
   }
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -15,67 +15,87 @@ function signToken(id) {
   });
 }
 
-/* =========================== SIGNUP =========================== */
 router.post("/signup", async (req, res) => {
   try {
     const { email, password, confirmPassword } = req.body;
-    if (!email || !password || !confirmPassword)
+    console.log("📝 Signup request:", { email });
+
+    if (!email || !password || !confirmPassword) {
       return res.status(400).json({ message: "All fields are required." });
-    if (password !== confirmPassword)
+    }
+    if (password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match." });
+    }
 
     const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: "Email already registered." });
+    if (exists) {
+      return res.status(400).json({ message: "Email already registered." });
+    }
 
     const newUser = await User.create({ email, password });
-    const token = signToken(newUser._id);
+    console.log("✅ Created user:", { id: newUser._id, email: newUser.email });
 
+    const token = signToken(newUser._id);
     res.status(201).json({
       message: "Account created successfully.",
       token,
       user: { _id: newUser._id, email: newUser.email },
     });
   } catch (err) {
-    console.error("❌ Signup error:", err);
+    console.error("❌ Signup error:", err.message, err.stack);
     res.status(500).json({ message: err?.message || "Server error during signup." });
   }
 });
 
-/* =========================== LOGIN ============================ */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password)
+    console.log("📝 Login request:", { email });
+
+    if (!email || !password) {
       return res.status(400).json({ message: "Email and password required." });
+    }
 
     const user = await User.findOne({ email }).select("+password");
-    if (!user) return res.status(400).json({ message: "Invalid email or password." });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password." });
+    }
 
     const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(400).json({ message: "Invalid email or password." });
+    if (!ok) {
+      return res.status(400).json({ message: "Invalid email or password." });
+    }
 
     const token = signToken(user._id);
     user.password = undefined;
+    console.log("✅ Login successful:", { id: user._id, email: user.email });
 
     res.status(200).json({ token, user });
   } catch (err) {
-    console.error("❌ Login error:", err);
+    console.error("❌ Login error:", err.message, err.stack);
     res.status(500).json({ message: err?.message || "Server error during login." });
   }
 });
 
-/* ======================== FORGOT (mock) ======================= */
 router.post("/forgot", async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: "Email required." });
+    console.log("📝 Forgot password request:", { email });
+
+    if (!email) {
+      return res.status(400).json({ message: "Email required." });
+    }
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "No account found with that email." });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with that email." });
+    }
 
+    // Mock reset (update with actual reset logic if needed)
+    console.log("✅ Mock reset token generated for:", { email });
     res.status(200).json({ message: "Password reset link (mock) sent." });
   } catch (err) {
-    console.error("❌ Forgot error:", err);
+    console.error("❌ Forgot error:", err.message, err.stack);
     res.status(500).json({ message: err?.message || "Server error during password reset." });
   }
 });

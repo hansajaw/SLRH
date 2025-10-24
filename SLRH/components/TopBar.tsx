@@ -30,22 +30,20 @@ export default function TopBar({
   style,
 }: Props) {
   const router = useRouter();
-  const nav = useNavigation<any>(); // for Drawer
+  const nav = useNavigation<any>(); 
   const insets = useSafeAreaInsets();
 
-  // ✅ Fallbacks for button actions
   const goProfile = onProfilePress ?? (() => router.push("/profile"));
   const goSearch = onSearchPress ?? (() => router.push("/search"));
   const openMenu = onMenuPress ?? (() => nav?.openDrawer?.());
 
-  // ✅ Back navigation fix — goes to previous page, not home
   const goBack =
     onBackPress ??
     (() => {
       if (router.canGoBack()) {
-        router.back(); // go to previous page
+        router.back(); 
       } else {
-        router.replace("/"); // fallback to home ONLY if no history
+        router.replace("/"); 
       }
     });
 
@@ -57,7 +55,7 @@ export default function TopBar({
         style,
       ]}
     >
-      {/* ===== LEFT SIDE ===== */}
+   
       <View style={styles.left}>
         {showBack ? (
           <IconBtn icon="chevron-back" onPress={goBack} label="Go back" />
@@ -68,12 +66,12 @@ export default function TopBar({
         )}
       </View>
 
-      {/* ===== TITLE ===== */}
+ 
       <Text style={styles.title} numberOfLines={1}>
         {title}
       </Text>
 
-      {/* ===== RIGHT SIDE ===== */}
+
       <View style={styles.right}>
         {showSearch && (
           <IconBtn icon="search" size={22} onPress={goSearch} label="Search" />
@@ -91,7 +89,7 @@ export default function TopBar({
   );
 }
 
-/* ---------- Small reusable icon button ---------- */
+
 function IconBtn({
   icon,
   onPress,
@@ -116,7 +114,6 @@ function IconBtn({
   );
 }
 
-/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: "#0b0b0b",

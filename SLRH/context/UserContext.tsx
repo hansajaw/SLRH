@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "../lib/api";
+import { AxiosError } from "axios";
 
-/* -------------------- Types -------------------- */
 type User = {
   _id?: string;
   email: string;
@@ -31,7 +31,6 @@ type Ctx = {
 
 const UserCtx = createContext<Ctx>(null as any);
 
-/* -------------------- Provider -------------------- */
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -45,11 +44,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log("🔄 Restoring session | Token:", !!storedToken, "| User:", !!storedUser);
         if (storedToken) {
           setToken(storedToken);
-          api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
           if (storedUser) {
             setUser(JSON.parse(storedUser));
-          } else {
+          }
+          try {
             await loadMe();
+          } catch (err) {
+            if (err instanceof AxiosError && err.response?.status === 401) {
+              console.warn("⚠️ Invalid token detected, clearing session");
+              await AsyncStorage.multiRemove(["token", "user", "remember"]);
+              setToken(null);
+              setUser(null);
+            } else {
+              throw err;
+            }
           }
         }
       } catch (err) {
@@ -64,9 +72,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("📡 POST", api.defaults.baseURL + "/auth/signup");
       const { data } = await api.post("/auth/signup", { email, password, confirmPassword });
+      console.log("✅ Signup response:", { token: data.token.substring(0, 10) + "...", user: data.user });
       setToken(data.token);
       setUser(data.user);
-      api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
       await AsyncStorage.setItem("token", data.token);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
     } catch (err) {
@@ -79,9 +87,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("📡 POST", api.defaults.baseURL + "/auth/login");
       const { data } = await api.post("/auth/login", { email, password });
+      console.log("✅ Login response:", { token: data.token.substring(0, 10) + "...", user: data.user });
       setToken(data.token);
       setUser(data.user);
-      api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
       await AsyncStorage.setItem("token", data.token);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
       if (remember) await AsyncStorage.setItem("remember", "true");
@@ -95,6 +103,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("📡 GET", api.defaults.baseURL + "/users/me");
       const { data } = await api.get("/users/me");
+      console.log("✅ Loaded user:", data.user);
       setUser(data.user);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
     } catch (err) {
@@ -107,6 +116,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("📡 PATCH", api.defaults.baseURL + "/users/me");
       const { data } = await api.patch("/users/me", profile);
+      console.log("✅ Updated user:", data.user);
       setUser(data.user);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
     } catch (err) {
@@ -144,7 +154,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.multiRemove(["token", "user", "remember"]);
       setUser(null);
       setToken(null);
-      delete api.defaults.headers.common["Authorization"];
       console.log("✅ Logout complete");
     } catch (err) {
       console.warn("⚠️ Logout error:", err);

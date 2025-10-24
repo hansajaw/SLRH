@@ -17,7 +17,7 @@ import SafeScreen from "../../components/SafeScreen";
 import TopBar from "../../components/TopBar";
 import { getUpcomingEvents, getResults, type Event } from "../data/events";
 import { getPeopleData } from "../data/people";
-import { getNews, type NewsItem } from "../data/media"; // ✅ now fetching from media.ts
+import { getNews, type NewsItem } from "../data/media"; 
 
 const SP = 14;
 const BG = "#0b0b0b";
@@ -28,7 +28,6 @@ const asImageSource = (src?: string | ImageSourcePropType) => {
   return typeof src === "string" ? { uri: src } : (src as ImageSourcePropType);
 };
 
-/* -------------------- Hero Section -------------------- */
 function HeroSlide({ event }: { event: Event }) {
   const id = event.id;
   const when = new Date(event.scheduledAt);
@@ -57,7 +56,6 @@ function HeroSlide({ event }: { event: Event }) {
   );
 }
 
-/* -------------------- News Card -------------------- */
 function NewsCard({ item }: { item: NewsItem }) {
   const when = new Date(); 
   return (
@@ -78,7 +76,6 @@ function NewsCard({ item }: { item: NewsItem }) {
   );
 }
 
-/* -------------------- Home Screen -------------------- */
 export default function HomeScreen() {
   const router = useRouter();
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -88,7 +85,6 @@ export default function HomeScreen() {
   const latestResults = useMemo(() => getResults().slice(0, 6), []);
   const { drivers, teams } = getPeopleData();
 
-  // 🏆 top drivers and featured teams
   const topDrivers = useMemo(() => {
     return drivers
       .map((d) => ({
@@ -109,7 +105,6 @@ export default function HomeScreen() {
       .slice(0, 4);
   }, [teams]);
 
-  // ✅ fetch latest news from media.ts
   const loadNews = async () => {
     try {
       setLoading(true);
@@ -140,7 +135,6 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Hero Slide */}
         <View style={{ marginBottom: 32 }}>
           <FlatList
             data={heroEvents}
@@ -154,7 +148,6 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* 🏁 Featured Teams */}
         <Section
           title="Featured Teams"
           onPress={() =>
@@ -194,7 +187,6 @@ export default function HomeScreen() {
           />
         </Section>
 
-        {/* 🏎️ Top Players */}
         <Section
           title="Top Players"
           onPress={() =>
@@ -233,7 +225,6 @@ export default function HomeScreen() {
           />
         </Section>
 
-        {/* 🏁 Latest Race Results */}
         <Section
           title="Latest Results"
           onPress={() =>
@@ -294,7 +285,6 @@ export default function HomeScreen() {
           />
         </Section>
 
-        {/* 📰 Latest News */}
         <Section
           title="Latest News"
           onPress={() =>
@@ -315,7 +305,6 @@ export default function HomeScreen() {
   );
 }
 
-/* ---------- Small helper section wrapper ---------- */
 function Section({
   title,
   onPress,
@@ -341,7 +330,6 @@ function Section({
   );
 }
 
-/* -------------------- Styles -------------------- */
 const styles = StyleSheet.create({
   heroCard: {
     width: SCREEN_W * 0.85,

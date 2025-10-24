@@ -69,14 +69,12 @@ export default function DriverProfile() {
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 + insets.bottom }} showsVerticalScrollIndicator={false}>
-        {/* Top Bar with Back Button */}
                 <View style={s.header}>
                   <Pressable onPress={() => router.back()} style={s.backBtn}>
                     <Ionicons name="chevron-back" size={22} color="#fff" />
                   </Pressable>
                   <Text style={s.headerTitle}>Player Profile</Text>
                 </View>
-        {/* Hero */}
         <View style={s.hero}>
           <LinearGradient colors={['#1a1a1a', '#0b0b0b']} style={s.heroGrad} />
           
@@ -105,7 +103,6 @@ export default function DriverProfile() {
           </View>
         </View>
 
-        {/* Stats Grid */}
         <View style={s.statsGrid}>
           <Stat icon="🎯" label="Races" value={String(st.races ?? 0)} />
           <Stat icon="🏆" label="Trophies" value={String(st.trophies ?? 0)} />
@@ -113,7 +110,6 @@ export default function DriverProfile() {
           <Stat icon="💰" label="Prize" value={money(st.prizeMoneyLKR)} />
         </View>
 
-        {/* Tabs */}
         <SegmentedBar
           tabs={["Overview", "Achievements", "Highlights", "Ratings"] as const}
           value={tab}
@@ -249,7 +245,6 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* Styles */
 const s = StyleSheet.create({
 
   header: { flexDirection: "row", alignItems: "center", padding: 16, paddingTop: 12 },

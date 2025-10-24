@@ -1,7 +1,5 @@
-// app/data/people.ts
 import type { ImageSourcePropType } from "react-native";
 
-/* ---------- Types ---------- */
 export type DriverItem = {
   id: string;
   name: string;
@@ -49,7 +47,6 @@ export type FameItem = {
   avatar?: string | ImageSourcePropType;
 };
 
-/* ---------- Seed Data ---------- */
 export const DRIVERS: DriverItem[] = [
   {
     id: "kumudu-rathnayaka",
@@ -269,7 +266,6 @@ export const DRIVERS: DriverItem[] = [
   },
 ];
 
-/* ---------- Teams ---------- */
 export const TEAMS: TeamItem[] = [
   {
     id: "t1",
@@ -286,8 +282,6 @@ export const TEAMS: TeamItem[] = [
     logo: require("../../assets/people/teams/colombo-speedsters.png"),
   },
 ];
-
-/* ---------- Fame ---------- */
 export const FAME: FameItem[] = [
   {
     id: "h1",
@@ -306,7 +300,6 @@ export const FAME: FameItem[] = [
   },
 ];
 
-/* ---------- Accessor Functions ---------- */
 export function getPeopleData() {
   return {
     drivers: DRIVERS,

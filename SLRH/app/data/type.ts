@@ -1,9 +1,8 @@
-// app/data/type.ts
 import type { ImageSourcePropType } from "react-native";
 
-/* ========== Core domain types ========== */
+
 export type Driver = {
-  id: string;                         // slug (e.g., "kumudu-rathnayaka")
+  id: string;                    
   name: string;
   avatar?: string | ImageSourcePropType;
   teamId?: string | null;
@@ -12,25 +11,24 @@ export type Driver = {
 };
 
 export type Team = {
-  id: string;                         // slug (e.g., "thunder-riders")
+  id: string;                        
   name: string;
   logo?: string | ImageSourcePropType;
   city?: string;
   founded?: string;
-  drivers?: string[];                 // driver ids
+  drivers?: string[];                
   about?: string;
 };
 
 export type Fame = {
-  id: string;                         // slug
-  name: string;                       // person/team
+  id: string;                       
+  name: string;                      
   role: "Driver" | "Team" | "Official";
   year?: number;
   summary?: string;
   portrait?: string | ImageSourcePropType;
 };
 
-/* ========== Home / Racing / Media shared ========== */
 export type EventItem = {
   _id: string;
   slug?: string;
@@ -39,9 +37,9 @@ export type EventItem = {
   city?: string;
   location?: { city?: string };
   dateUtc?: string;
-  scheduledDateTime?: string;         // ISO (preferred)
-  date?: string;                      // legacy yyyy-mm-dd
-  startTime?: string;                 // legacy hh:mm
+  scheduledDateTime?: string;        
+  date?: string;                      
+  startTime?: string;                 
   heroImage?: string | ImageSourcePropType;
   banner?: string | ImageSourcePropType;
   image?: string | ImageSourcePropType;
@@ -54,7 +52,7 @@ export type NewsItem = {
   category?: string;
   image?: string | ImageSourcePropType;
   banner?: string | ImageSourcePropType;
-  publishedAt?: string;               // ISO
+  publishedAt?: string;               
   createdAt?: string;
   excerpt?: string;
 };
@@ -64,7 +62,7 @@ export type ResultItem = {
   slug: string;
   title: string;
   city?: string;
-  occurredAt: string;                 // ISO date of the race
+  occurredAt: string;               
   banner?: string | ImageSourcePropType;
   topFinishers?: Array<{
     place: 1 | 2 | 3;
@@ -77,8 +75,8 @@ export type MediaVideo = {
   _id: string;
   title: string;
   thumbnail?: string | ImageSourcePropType;
-  duration?: string;                  // "4:21"
-  publishedAt?: string;               // ISO
+  duration?: string;                
+  publishedAt?: string;               
 };
 
 export type MediaImage = {

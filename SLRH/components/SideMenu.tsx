@@ -1,4 +1,3 @@
-// components/SideMenu.tsx
 import React from "react";
 import {
   View,
@@ -56,7 +55,7 @@ export default function SideMenu({ navigation }: DrawerContentComponentProps) {
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      {/* Header */}
+
       <LinearGradient
         colors={["#103231", "#0b0b0b"]}
         start={{ x: 0, y: 0 }}
@@ -85,7 +84,7 @@ export default function SideMenu({ navigation }: DrawerContentComponentProps) {
         </View>
       </LinearGradient>
 
-      {/* Content */}
+    
       <ScrollView
         contentContainerStyle={s.scrollCC}
         showsVerticalScrollIndicator={false}
@@ -117,7 +116,6 @@ export default function SideMenu({ navigation }: DrawerContentComponentProps) {
           <View style={{ flexGrow: 1 }} />
         </View>
 
-        {/* Footer */}
         <View style={s.footer}>
           <Pressable style={s.signOut} onPress={confirmSignOut}>
             <Ionicons name="log-out-outline" size={18} color="#fff" />
@@ -133,7 +131,6 @@ export default function SideMenu({ navigation }: DrawerContentComponentProps) {
   );
 }
 
-/* ---------- Small components ---------- */
 function Group({
   title,
   icon,
@@ -184,7 +181,6 @@ function Separator() {
   return <View style={s.separator} />;
 }
 
-/* ---------- Styles ---------- */
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
   header: {

@@ -1,8 +1,8 @@
 export type Product = {
   id: string;
   title: string;
-  price: number;      // in LKR
-  image: any;         // require("../../assets/store/x.png")
+  price: number;      
+  image: any;        
   description: string;
 };
 

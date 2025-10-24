@@ -6,17 +6,17 @@ export type CartItem = {
   price: number;
   image: any;
   quantity: number;
-  rating?: number; // ⭐ keeps product star rating for UI
+  rating?: number; 
 };
 
 type CartContextType = {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity">) => void;
   removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, qty: number) => void; // 🆕
+  updateQuantity: (id: string, qty: number) => void; 
   clearCart: () => void;
   total: number;
-  itemCount: number; // 🆕 total items in cart
+  itemCount: number; 
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -24,7 +24,6 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  /** Add an item or increment if exists */
   const addToCart = (item: Omit<CartItem, "quantity">) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
@@ -37,30 +36,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  /** Remove an item completely */
   const removeFromCart = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  /** 🆕 Update quantity directly */
   const updateQuantity = (id: string, qty: number) => {
     setItems((prev) =>
       prev
         .map((i) => (i.id === id ? { ...i, quantity: qty } : i))
-        .filter((i) => i.quantity > 0) // remove if 0
+        .filter((i) => i.quantity > 0) 
     );
   };
 
-  /** Clear all items */
   const clearCart = () => setItems([]);
 
-  /** Total cost */
   const total = useMemo(
     () => items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     [items]
   );
 
-  /** 🆕 Total item count */
   const itemCount = useMemo(
     () => items.reduce((sum, i) => sum + i.quantity, 0),
     [items]

@@ -65,7 +65,6 @@ export default function RacingScreen() {
 
       <SegmentedBar tabs={TABS} value={tab} onChange={setTab} wrapToTwoLines />
 
-      {/* Search */}
       <View style={styles.toolsRow}>
         <View style={styles.searchBox}>
           <TextInput
@@ -78,7 +77,6 @@ export default function RacingScreen() {
         </View>
       </View>
 
-      {/* List */}
       <FlatList<ListItem>
         data={filtered}
         keyExtractor={(it) => it.key}
@@ -105,7 +103,6 @@ export default function RacingScreen() {
   );
 }
 
-/* ---------------- Cards ---------------- */
 
 function ScheduleCard({ e }: { e: ReturnType<typeof getSchedule>[number] }) {
   return (

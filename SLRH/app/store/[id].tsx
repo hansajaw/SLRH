@@ -23,11 +23,11 @@ type Product = {
   price: number;
   image?: any;
   rating?: number;
-  eta?: string;       // shipping time label
+  eta?: string;      
   discount?: number;
   description?: string;
   category?: string;
-  quantity: number;   // stock
+  quantity: number;   
 };
 
 const asSrc = (img: any) => (typeof img === "string" ? { uri: img } : img);
@@ -57,7 +57,6 @@ export default function ProductDetail() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function validateAndAdd() {
@@ -159,13 +158,11 @@ export default function ProductDetail() {
             </View>
           </View>
 
-          {/* Price + discount */}
           <Text style={s.price}>
             {fmt(p.price)}
             {p.discount ? <Text style={s.discount}>   −{p.discount}%</Text> : null}
           </Text>
 
-          {/* Stock + shipping */}
           <View style={s.metaRow}>
             <Text style={[s.badge, out && { color: "#ef4444" }]}>
               {out ? "🔴 Out of stock" : "🟢 In stock"}
@@ -177,10 +174,8 @@ export default function ProductDetail() {
             <Text style={s.meta}>🚚 Delivered</Text>
           </View>
 
-          {/* Description */}
           <Text style={s.desc}>{p.description ?? "No description."}</Text>
 
-          {/* Actions */}
           <View style={s.btnRow}>
             <Pressable
               style={[s.addBtn, out && { borderColor: "#333" }]}

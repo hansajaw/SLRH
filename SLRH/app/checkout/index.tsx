@@ -49,11 +49,10 @@ export default function CheckoutScreen() {
       return;
     }
 
-    // REAL checkout call (validates and decrements on the server)
     try {
       const payload = {
         items: items.map((l: any) => ({ productId: l.id, qty: l.quantity })),
-        // you can also include customer & address if your backend wants it
+
       };
       const res = await fetch(`${BASE}/api/v1/checkout`, {
         method: "POST",
@@ -91,17 +90,14 @@ export default function CheckoutScreen() {
         onBackPress={() => router.replace("/cart" as any)}
       />
       <ScrollView contentContainerStyle={s.container}>
-        {/* 👤 Customer */}
         <Text style={s.sectionTitle}>Customer Details</Text>
         <TextInput style={s.input} placeholder="Full Name *" placeholderTextColor="#666" value={name} onChangeText={setName} />
         <TextInput style={s.input} placeholder="Phone Number *" placeholderTextColor="#666" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
         <TextInput style={s.input} placeholder="Email Address" placeholderTextColor="#666" keyboardType="email-address" value={email} onChangeText={setEmail} />
 
-        {/* 📍 Address */}
         <Text style={[s.sectionTitle, { marginTop: 24 }]}>Delivery Address</Text>
         <TextInput style={[s.input, { height: 80 }]} multiline placeholder="Enter your delivery address *" placeholderTextColor="#666" value={address} onChangeText={setAddress} />
 
-        {/* 💳 Payment */}
         <Text style={[s.sectionTitle, { marginTop: 24 }]}>Payment Method</Text>
         <Pressable onPress={() => setPayment("cash")} style={[s.option, payment === "cash" && s.optionActive]}>
           <Text style={s.optionText}>💵 Cash on Delivery</Text>
@@ -121,7 +117,6 @@ export default function CheckoutScreen() {
           </View>
         )}
 
-        {/* 🧾 Summary */}
         <Text style={[s.sectionTitle, { marginTop: 24 }]}>Order Summary</Text>
         <View style={s.summaryBox}>
           <View style={s.row}>
@@ -139,7 +134,6 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
-        {/* ✅ Confirm */}
         <Pressable style={s.confirmBtn} onPress={handleConfirm}>
           <Text style={s.confirmText}>Place Order</Text>
         </Pressable>
