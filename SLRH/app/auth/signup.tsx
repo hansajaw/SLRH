@@ -58,7 +58,7 @@ export default function Signup() {
       router.push({ pathname: "/auth/profile-setup", params: { email } });
     } catch (error) {
       const e = error as AxiosError<{ message?: string }>;
-      console.log("Full error response:", e); // Log full error for debugging
+      console.log("Full error response:", e); 
       console.error("Signup error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ||
