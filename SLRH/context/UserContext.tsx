@@ -70,8 +70,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   async function signup(email: string, password: string, confirmPassword: string) {
     try {
-      console.log("📡 POST", api.defaults.baseURL + "/auth/signup");
-      const { data } = await api.post("/auth/signup", { email, password, confirmPassword });
+      console.log("📡 POST", "http://10.0.2.2:3001/api/v1/auth/signup");
+      const { data } = await api.post("http://10.0.2.2:3001/api/v1/auth/signup", { email, password, confirmPassword });
       console.log("✅ Signup response:", { token: data.token.substring(0, 10) + "...", user: data.user });
       setToken(data.token);
       setUser(data.user);

@@ -69,7 +69,7 @@ app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));
 
 app.use((req, res) => {
   console.warn(`🚫 404: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ message: `Routeeee not found: ${req.method} ${req.originalUrl}` });
+  res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 app.use((err, _req, res, _next) => {
   console.error("🔥 Uncaught error:", err.message, err.stack);
