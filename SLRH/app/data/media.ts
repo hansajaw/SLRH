@@ -8,6 +8,7 @@ export type MediaVideo = {
   youtubeId: string;
   caption?: string;
   thumbnail?: string | ImageSourcePropType;
+  duration?: string; 
 };
 
 export type Album = {
@@ -29,6 +30,7 @@ export type NewsItem = {
   excerpt?: string;
   body?: string;
   banner?: string | ImageSourcePropType;
+  image?: string | ImageSourcePropType;
   date?: string;
 };
 
@@ -139,4 +141,12 @@ export async function getAlbumImages(albumId: string) {
 
 export async function getNews() {
   return NEWS;
+}
+
+/* ---------- Combined Accessor for Search ---------- */
+export function getMediaData() {
+  return {
+    videos: VIDEOS,
+    images: IMAGES,
+  };
 }

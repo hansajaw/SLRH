@@ -240,7 +240,7 @@ function ImageRow({ img }: { img: MediaImage }) {
 function NewsRow({ n }: { n: NewsItem }) {
   return (
     <Pressable style={s.rowCard}>
-      <Image source={asSrc(n.banner || n.image)} style={s.thumb} />
+      <Image source={asSrc(n.banner)} style={s.thumb} />
       <View style={{ flex: 1 }}>
         <Text style={s.rowTitle}>{n.title}</Text>
         <Text style={s.rowSub}>

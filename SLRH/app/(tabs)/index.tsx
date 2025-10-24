@@ -48,7 +48,7 @@ function HeroSlide({ event }: { event: Event }) {
             📍 {event.city} • 📅 {when.toLocaleDateString()}
           </Text>
           <View style={styles.heroCTABtn}>
-            <Text style={styles.heroCTA}>View Event →</Text>
+            <Text style={styles.heroCTA}>View Event</Text>
           </View>
         </View>
       </Pressable>
@@ -123,7 +123,7 @@ export default function HomeScreen() {
 
   return (
     <SafeScreen bg={BG}>
-      <TopBar title="Home" />
+      <TopBar title="SLRH" />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: SP, paddingBottom: 88 }}
