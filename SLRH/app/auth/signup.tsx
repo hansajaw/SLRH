@@ -47,7 +47,7 @@ export default function Signup() {
     try {
       setLoading(true);
       console.log("Sending signup request to:", `${api.defaults.baseURL}/auth/signup`);
-      const { data } = await api.post("/auth/signup", {
+      const { data } = await api.post("/api/v1/auth/signup", {
         email: email.trim(),
         password: pw,
         confirmPassword: pw2,
