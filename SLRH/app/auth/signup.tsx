@@ -16,7 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AxiosError } from "axios";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
-import { api } from "../../lib/api";
+import api from "../../utils/api"; // unified api import
 import * as Google from "expo-auth-session/providers/google";
 import * as Facebook from "expo-auth-session/providers/facebook";
 import * as WebBrowser from "expo-web-browser";
@@ -34,36 +34,33 @@ export default function Signup() {
 
   const { login, socialLogin } = useUser();
 
-  const [_, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  // Google: Android + Web client IDs only (Android build + token verification)
+  const [, googleResponse, googlePromptAsync] = Google.useAuthRequest({
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   });
 
-  const [__, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_ID,
+  // Facebook: single App ID
+  const [, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_ID!,
   });
 
   useEffect(() => {
-    if (googleResponse?.type === "success") {
-      const { authentication } = googleResponse;
-      if (authentication) {
-        handleSocialLogin("google", authentication.accessToken);
-      }
+    if (googleResponse?.type === "success" && googleResponse.authentication) {
+      handleSocialLogin("google", googleResponse.authentication.accessToken!);
     }
   }, [googleResponse]);
 
   useEffect(() => {
-    if (fbResponse?.type === "success") {
-      const { authentication } = fbResponse;
-      if (authentication) {
-        handleSocialLogin("facebook", authentication.accessToken);
-      }
+    if (fbResponse?.type === "success" && fbResponse.authentication) {
+      handleSocialLogin("facebook", fbResponse.authentication.accessToken!);
     }
   }, [fbResponse]);
 
-  async function handleSocialLogin(provider: "google" | "facebook", token: string) {
+  async function handleSocialLogin(
+    provider: "google" | "facebook",
+    token: string
+  ) {
     try {
       setLoading(true);
       const { data } = await api.post(`/auth/social-login`, { provider, token });
@@ -78,8 +75,7 @@ export default function Signup() {
     }
   }
 
-  function validate() {
-    console.log("Validating signup:", { email, pw, pw2, agree });
+  function validate(): string {
     if (!email || !pw || !pw2) return "Please fill in all fields.";
     if (!email.includes("@")) return "Enter a valid email address.";
     if (pw.length < 6) return "Password must be at least 6 characters long.";
@@ -90,27 +86,21 @@ export default function Signup() {
 
   async function onContinue() {
     const err = validate();
-    if (err) {
-      Alert.alert("Check details", err);
-      return;
-    }
+    if (err) return Alert.alert("Check details", err);
 
     try {
       setLoading(true);
-      console.log("Sending signup request to:", `${api.defaults.baseURL}/auth/signup`);
-      const { data } = await api.post("/auth/signup", {
+      await api.post("/auth/signup", {
         email: email.trim(),
         password: pw,
         confirmPassword: pw2,
       });
 
-      console.log("Signup successful, logging in...");
+      // log in right after sign up, then go to profile setup
       await login(email.trim(), pw, true);
-      console.log("Navigating to profile setup");
       router.push({ pathname: "/auth/profile-setup", params: { email } });
     } catch (error) {
       const e = error as AxiosError<{ message?: string }>;
-      console.log("Full error response:", e); 
       console.error("Signup error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ||
@@ -128,113 +118,119 @@ export default function Signup() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={{ flex: 1 }}>
           <LinearGradient
-        colors={["#0E2322", "#0b0b0b"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ height: 140 }}
-      />
-
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={s.title}>Create Your Account</Text>
-        <Text style={s.subtitle}>Join the racing community now</Text>
-
-        <Text style={s.label}>Email Address</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@email.com"
-          placeholderTextColor="#777"
-          style={s.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <Text style={s.label}>Password</Text>
-        <View style={s.inputWrap}>
-          <TextInput
-            value={pw}
-            onChangeText={setPw}
-            placeholder="••••••••"
-            placeholderTextColor="#777"
-            style={[s.input, { paddingRight: 44 }]}
-            secureTextEntry={!showPw}
+            colors={["#0E2322", "#0b0b0b"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ height: 140 }}
           />
-          <Pressable onPress={() => setShowPw((v) => !v)} style={s.eyeBtn}>
-            <Ionicons name={showPw ? "eye-off" : "eye"} size={20} color="#9adbd2" />
-          </Pressable>
+
+          <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+            <Text style={s.title}>Create Your Account</Text>
+            <Text style={s.subtitle}>Join the racing community now</Text>
+
+            <Text style={s.label}>Email Address</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@email.com"
+              placeholderTextColor="#777"
+              style={s.input}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+
+            <Text style={s.label}>Password</Text>
+            <View style={s.inputWrap}>
+              <TextInput
+                value={pw}
+                onChangeText={setPw}
+                placeholder="••••••••"
+                placeholderTextColor="#777"
+                style={[s.input, { paddingRight: 44 }]}
+                secureTextEntry={!showPw}
+              />
+              <Pressable onPress={() => setShowPw(v => !v)} style={s.eyeBtn}>
+                <Ionicons name={showPw ? "eye-off" : "eye"} size={20} color="#9adbd2" />
+              </Pressable>
+            </View>
+
+            <Text style={s.label}>Confirm Password</Text>
+            <View style={s.inputWrap}>
+              <TextInput
+                value={pw2}
+                onChangeText={setPw2}
+                placeholder="••••••••"
+                placeholderTextColor="#777"
+                style={[s.input, { paddingRight: 44 }]}
+                secureTextEntry={!showPw2}
+              />
+              <Pressable onPress={() => setShowPw2(v => !v)} style={s.eyeBtn}>
+                <Ionicons name={showPw2 ? "eye-off" : "eye"} size={20} color="#9adbd2" />
+              </Pressable>
+            </View>
+
+            <Pressable style={s.checkRow} onPress={() => setAgree(!agree)}>
+              <View
+                style={[
+                  s.checkbox,
+                  agree && { backgroundColor: "#00E0C6", borderColor: "#00E0C6" },
+                ]}
+              >
+                {agree && <Ionicons name="checkmark" size={16} color="#001018" />}
+              </View>
+              <Text style={s.agreeText}>
+                I agree to the{" "}
+                <Text style={s.link} onPress={() => router.push("/auth/terms")}>
+                  Terms of Service
+                </Text>{" "}
+                and{" "}
+                <Text style={s.link} onPress={() => router.push("/auth/terms")}>
+                  Privacy Policy
+                </Text>.
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={onContinue}
+              style={[s.primaryBtn, loading && { opacity: 0.6 }]}
+              disabled={loading}
+            >
+              <Text style={s.primaryText}>{loading ? "Please wait…" : "Continue"}</Text>
+            </Pressable>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 24 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: "#1a2232" }} />
+              <Text style={{ color: "#9adbd2", fontWeight: "600" }}>OR</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: "#1a2232" }} />
+            </View>
+
+            <Pressable
+              onPress={() => googlePromptAsync()}
+              style={s.socialBtn}
+              disabled={loading}
+            >
+              <Ionicons name="logo-google" size={18} color="#00E0C6" />
+              <Text style={s.socialText}>Continue with Google</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => fbPromptAsync()}
+              style={[s.socialBtn, { marginTop: 12 }]}
+              disabled={loading}
+            >
+              <Ionicons name="logo-facebook" size={18} color="#00E0C6" />
+              <Text style={s.socialText}>Continue with Facebook</Text>
+            </Pressable>
+
+            <Text style={[s.footerText, { marginTop: 20 }]}>
+              Already have an account?{" "}
+              <Text style={s.link} onPress={() => router.push("/auth/login")}>
+                Log in
+              </Text>
+            </Text>
+          </ScrollView>
         </View>
-
-        <Text style={s.label}>Confirm Password</Text>
-        <View style={s.inputWrap}>
-          <TextInput
-            value={pw2}
-            onChangeText={setPw2}
-            placeholder="••••••••"
-            placeholderTextColor="#777"
-            style={[s.input, { paddingRight: 44 }]}
-            secureTextEntry={!showPw2}
-          />
-          <Pressable onPress={() => setShowPw2((v) => !v)} style={s.eyeBtn}>
-            <Ionicons name={showPw2 ? "eye-off" : "eye"} size={20} color="#9adbd2" />
-          </Pressable>
-        </View>
-
-        <Pressable style={s.checkRow} onPress={() => setAgree(!agree)}>
-          <View
-            style={[
-              s.checkbox,
-              agree && { backgroundColor: "#00E0C6", borderColor: "#00E0C6" },
-            ]}
-          >
-            {agree && <Ionicons name="checkmark" size={16} color="#001018" />}
-          </View>
-          <Text style={s.agreeText}>
-            I agree to the <Text style={s.link} onPress={() => router.push("/auth/terms")}>Terms of Service</Text> and{" "}
-            <Text style={s.link} onPress={() => router.push("/auth/terms")}>Privacy Policy</Text>.
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={onContinue}
-          style={[s.primaryBtn, loading && { opacity: 0.6 }]}
-          disabled={loading}
-        >
-          <Text style={s.primaryText}>{loading ? "Please wait…" : "Continue"}</Text>
-        </Pressable>
-
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 24 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: "#1a2232" }} />
-          <Text style={{ color: "#9adbd2", fontWeight: "600" }}>OR</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: "#1a2232" }} />
-        </View>
-
-        <Pressable
-          onPress={() => googlePromptAsync()}
-          style={[s.socialBtn, loading && { opacity: 0.6 }]}
-          disabled={loading}
-        >
-          <Ionicons name="logo-google" size={18} color="#00E0C6" />
-          <Text style={s.socialText}>Continue with Google</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => fbPromptAsync()}
-          style={[s.socialBtn, loading && { opacity: 0.6, marginTop: 12 }]}
-          disabled={loading}
-        >
-          <Ionicons name="logo-facebook" size={18} color="#00E0C6" />
-          <Text style={s.socialText}>Continue with Facebook</Text>
-        </Pressable>
-
-        <Text style={[s.footerText, { marginTop: 20 }]}>
-          Already have an account?{" "}
-          <Text style={s.link} onPress={() => router.push("/auth/login")}>
-            Log in
-          </Text>
-        </Text>
-      </ScrollView>
-    </View>
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
     </SafeScreen>
   );
 }
@@ -297,9 +293,5 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#1a2232",
   },
-  socialText: {
-    color: "#EFFFFB",
-    fontWeight: "600",
-    letterSpacing: 0.2,
-  },
+  socialText: { color: "#EFFFFB", fontWeight: "600", letterSpacing: 0.2 },
 });

@@ -33,32 +33,26 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login, socialLogin } = useUser();
 
-  const [_, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  // Google (Android + Web)
+  const [, googleResponse, googlePromptAsync] = Google.useAuthRequest({
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   });
 
-  const [__, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_ID,
+  // Facebook (App ID)
+  const [, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_ID!,
   });
 
   useEffect(() => {
-    if (googleResponse?.type === "success") {
-      const { authentication } = googleResponse;
-      if (authentication) {
-        handleSocialLogin("google", authentication.accessToken);
-      }
+    if (googleResponse?.type === "success" && googleResponse.authentication) {
+      handleSocialLogin("google", googleResponse.authentication.accessToken!);
     }
   }, [googleResponse]);
 
   useEffect(() => {
-    if (fbResponse?.type === "success") {
-      const { authentication } = fbResponse;
-      if (authentication) {
-        handleSocialLogin("facebook", authentication.accessToken);
-      }
+    if (fbResponse?.type === "success" && fbResponse.authentication) {
+      handleSocialLogin("facebook", fbResponse.authentication.accessToken!);
     }
   }, [fbResponse]);
 
@@ -79,15 +73,13 @@ export default function Login() {
 
   async function onLogin() {
     if (!email || !password) {
-      Alert.alert("Missing info", "Please enter email and password.");
-      return;
+      return Alert.alert("Missing info", "Please enter email and password.");
     }
     try {
       setLoading(true);
-      console.log("Attempting login:", { email });
       await login(email.trim(), password.trim(), remember);
       Alert.alert("Welcome", "Logged in successfully!");
-      router.replace("/(tabs)"); 
+      router.replace("/(tabs)");
     } catch (e: any) {
       console.error("Login error:", e?.response?.data || e?.message || e);
       const message =
@@ -103,12 +95,10 @@ export default function Login() {
 
   async function onForgot() {
     if (!email) {
-      Alert.alert("Forgot Password", "Enter your email above first.");
-      return;
+      return Alert.alert("Forgot Password", "Enter your email above first.");
     }
     try {
       setLoading(true);
-      console.log("Sending forgot password request for:", email);
       const { data } = await api.post("/auth/forgot", { email: email.trim() });
       Alert.alert("Reset", data?.message ?? "If this email exists, a reset link was sent.");
     } catch (e: any) {
@@ -161,16 +151,11 @@ export default function Login() {
                   secureTextEntry={!showPw}
                 />
                 <Pressable
-                  onPress={() => setShowPw((v) => !v)}
+                  onPress={() => setShowPw(v => !v)}
                   hitSlop={10}
                   style={s.eyeBtn}
-                  accessibilityLabel={showPw ? "Hide password" : "Show password"}
                 >
-                  <Ionicons
-                    name={showPw ? "eye-off" : "eye"}
-                    size={20}
-                    color="#9adbd2"
-                  />
+                  <Ionicons name={showPw ? "eye-off" : "eye"} size={20} color="#9adbd2" />
                 </Pressable>
               </View>
 
@@ -186,11 +171,10 @@ export default function Login() {
                 </View>
 
                 <Pressable onPress={onForgot}>
-                  <Text style={[s.small, { color: "#00E0C6" }]}>
-                    Forgot Password?
-                  </Text>
+                  <Text style={[s.small, { color: "#00E0C6" }]}>Forgot Password?</Text>
                 </Pressable>
               </View>
+
               <Pressable onPress={() => router.push("/auth/terms")}>
                 <Text style={[s.small, { color: "#00E0C6", textAlign: "center", marginTop: S.md }]}>
                   Terms and Conditions
@@ -269,12 +253,7 @@ const s = StyleSheet.create({
     lineHeight: 30,
   },
   subtitle: { color: "#8ecac1", lineHeight: 22 },
-  label: {
-    color: "#EFFFFB",
-    fontWeight: "600",
-    letterSpacing: 0.2,
-    marginTop: 6,
-  },
+  label: { color: "#EFFFFB", fontWeight: "600", letterSpacing: 0.2, marginTop: 6 },
   inputWrap: { position: "relative" },
   input: {
     backgroundColor: "#101418",
@@ -295,11 +274,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   small: { color: "#8ecac1", lineHeight: 18 },
   primaryBtn: {
     height: 50,
@@ -311,11 +286,7 @@ const s = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
   },
-  primaryText: {
-    color: "#001018",
-    fontWeight: "800",
-    letterSpacing: 0.4,
-  },
+  primaryText: { color: "#001018", fontWeight: "800", letterSpacing: 0.4 },
   socialBtn: {
     height: 50,
     backgroundColor: "#101418",
@@ -327,9 +298,5 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#1a2232",
   },
-  socialText: {
-    color: "#EFFFFB",
-    fontWeight: "600",
-    letterSpacing: 0.2,
-  },
+  socialText: { color: "#EFFFFB", fontWeight: "600", letterSpacing: 0.2 },
 });
