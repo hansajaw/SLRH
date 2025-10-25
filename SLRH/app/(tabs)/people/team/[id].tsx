@@ -7,12 +7,12 @@ import {
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
+import Header from "../../../../components/Header";
 import { getTeamById, getPeopleData } from "../../../data/people";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TeamProfile() {
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const team = id ? getTeamById(id) : undefined;
   const { drivers } = getPeopleData();
@@ -38,14 +38,7 @@ export default function TeamProfile() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color="#00E0C6" />
-          <Text style={styles.backTxt}>Back</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Team Profile</Text>
-        <View style={{ width: 50 }} />
-      </View>
+      <Header title="Team Profile" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.teamCard}>
@@ -105,21 +98,6 @@ export default function TeamProfile() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
-
-  // Header
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1e1e1e",
-    backgroundColor: "#0b0b0b",
-  },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  backTxt: { color: "#00E0C6", fontWeight: "700" },
-  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "900" },
 
   scrollContent: { padding: 16, paddingBottom: 60 },
 

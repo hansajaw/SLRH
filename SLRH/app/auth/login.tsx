@@ -17,6 +17,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
 import api from "../../utils/api";
+import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
+import * as WebBrowser from "expo-web-browser";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const S = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32, xxl: 40 };
 
@@ -27,6 +32,50 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const { login } = useUser();
+
+  const [_, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  });
+
+  const [__, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type === "success") {
+      const { authentication } = googleResponse;
+      if (authentication) {
+        handleSocialLogin("google", authentication.accessToken);
+      }
+    }
+  }, [googleResponse]);
+
+  useEffect(() => {
+    if (fbResponse?.type === "success") {
+      const { authentication } = fbResponse;
+      if (authentication) {
+        handleSocialLogin("facebook", authentication.accessToken);
+      }
+    }
+  }, [fbResponse]);
+
+  async function handleSocialLogin(provider: "google" | "facebook", token: string) {
+    try {
+      setLoading(true);
+      const { data } = await api.post(`/auth/social-login`, { provider, token });
+      await socialLogin(data.user, data.token);
+      Alert.alert("Welcome", "Logged in successfully!");
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      console.error("Social login error:", e?.response?.data || e?.message || e);
+      Alert.alert("Login failed", "Unable to login with social account.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function onLogin() {
     if (!email || !password) {
@@ -157,12 +206,20 @@ export default function Login() {
                 )}
               </Pressable>
 
-              <Pressable style={s.socialBtn}>
+              <Pressable
+                onPress={() => googlePromptAsync()}
+                style={[s.socialBtn, loading && { opacity: 0.6 }]}
+                disabled={loading}
+              >
                 <Ionicons name="logo-google" size={18} color="#00E0C6" />
                 <Text style={s.socialText}>Continue with Google</Text>
               </Pressable>
 
-              <Pressable style={s.socialBtn}>
+              <Pressable
+                onPress={() => fbPromptAsync()}
+                style={[s.socialBtn, loading && { opacity: 0.6 }]}
+                disabled={loading}
+              >
                 <Ionicons name="logo-facebook" size={18} color="#00E0C6" />
                 <Text style={s.socialText}>Continue with Facebook</Text>
               </Pressable>

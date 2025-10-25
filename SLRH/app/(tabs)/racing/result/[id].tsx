@@ -1,6 +1,8 @@
 import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { getResults } from "../../../data/events";
+import Header from "../../../../components/Header";
+import SafeScreen from "../../../../components/SafeScreen";
 
 const asImageSource = (src?: any) =>
   typeof src === "string" ? { uri: src } : src || require("../../../../assets/races/colombo.jpg");
@@ -21,7 +23,9 @@ export default function ResultDetailScreen() {
   const date = new Date(occurredAt).toLocaleDateString();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <SafeScreen bg="#0b0b0b">
+      <Header title="Race Results" />
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <Image source={asImageSource(banner)} style={styles.banner} />
       <View style={styles.details}>
         <Text style={styles.title}>{title}</Text>
@@ -57,6 +61,7 @@ export default function ResultDetailScreen() {
         )}
       </View>
     </ScrollView>
+    </SafeScreen>
   );
 }
 

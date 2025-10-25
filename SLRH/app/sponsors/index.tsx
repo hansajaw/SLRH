@@ -1,12 +1,12 @@
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, Text, StyleSheet, Image, View } from "react-native";
-import TopBar from "../../components/TopBar";
+import Header from "../../components/Header";
 
 export default function SponsorsScreen() {
   return (
     <SafeAreaView style={s.safe}>
-      <TopBar title="Sponsors" showBack={true} showMenu={false} showSearch={false} showProfile={false} />
+      <Header title="Sponsors" />
       <ScrollView contentContainerStyle={s.container}>
         <Text style={s.title}>🏁 Our Sponsors</Text>
         <Text style={s.text}>

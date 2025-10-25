@@ -7,15 +7,17 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import Header from "../../components/Header";
 import api from "../../utils/api"; 
 
 export default function SecuritySettings() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
 
   const [oldPwd, setOldPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -49,15 +51,10 @@ export default function SecuritySettings() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <View style={[s.top, { paddingTop: Math.max(8, insets.top * 0.25) }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} style={s.topBtn}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
-        <Text style={s.topTitle}>Security</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <Header title="Security" />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 16 + insets.bottom }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 16 + insets.bottom }}>
         <View style={s.card}>
           <Text style={s.label}>Change Password</Text>
 
@@ -93,32 +90,13 @@ export default function SecuritySettings() {
           </Pressable>
         </View>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
-  top: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  topBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topTitle: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "900",
-    textAlign: "center",
-  },
   card: {
     marginHorizontal: 16,
     marginTop: 12,

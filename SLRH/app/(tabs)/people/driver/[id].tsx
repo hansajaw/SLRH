@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import SegmentedBar from "../../../../components/SegmentedBar";   
 import { getDriverById } from "../../../data/people";      
@@ -69,12 +69,7 @@ export default function DriverProfile() {
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 + insets.bottom }} showsVerticalScrollIndicator={false}>
-                <View style={s.header}>
-                  <Pressable onPress={() => router.back()} style={s.backBtn}>
-                    <Ionicons name="chevron-back" size={22} color="#fff" />
-                  </Pressable>
-                  <Text style={s.headerTitle}>Player Profile</Text>
-                </View>
+        <Header title="Player Profile" />
         <View style={s.hero}>
           <LinearGradient colors={['#1a1a1a', '#0b0b0b']} style={s.heroGrad} />
           
@@ -246,18 +241,6 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const s = StyleSheet.create({
-
-  header: { flexDirection: "row", alignItems: "center", padding: 16, paddingTop: 12 },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#111",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
   link: { color: "#00E0C6", fontWeight: "700" },
   miss: { color: "#fff", fontWeight: "700" },

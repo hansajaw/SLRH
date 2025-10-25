@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, Pressable, ScrollView, Alert } from "rea
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import TopBar from "../../components/TopBar";
+import Header from "../../components/Header";
 import { useCart } from "../../context/CartContext";
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3001";
@@ -94,7 +94,6 @@ function CartItemCard({
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const cart = useCart() as any;
 
   const { items, removeFromCart, total } = cart;
@@ -158,14 +157,7 @@ export default function CartScreen() {
 
   return (
     <SafeAreaView style={[st.safe, { paddingBottom: insets.bottom }]}>
-      <TopBar
-        title="Cart"
-        showBack
-        showMenu={false}
-        showSearch={false}
-        showProfile={false}
-        onBackPress={() => router.back()}
-      />
+      <Header title="Cart" />
 
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 140 }}

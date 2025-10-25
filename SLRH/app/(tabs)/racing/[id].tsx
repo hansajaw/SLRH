@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text, Image, Pressable, ScrollView, StyleSheet } from "react-native";
 import SafeScreen from "../../../components/SafeScreen";
+import Header from "../../../components/Header";
 import { Ionicons } from "@expo/vector-icons";
 import { getAllEvents, type Event } from "../../data/events";
 
@@ -39,7 +40,6 @@ function CountdownTimer({ targetDate }: { targetDate: Date }) {
 
 export default function EventDetails() {
   const { id } = useLocalSearchParams();
-  const router = useRouter();
   const allEvents = getAllEvents();
   const event = allEvents.find((e) => String(e.id) === String(id));
 
@@ -57,14 +57,8 @@ export default function EventDetails() {
 
   return (
     <SafeScreen bg="#0b0b0b">
+      <Header title="Event Details" />
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Event Details</Text>
-        </View>
 
         {/* Banner */}
         {event.banner ? (
@@ -117,17 +111,6 @@ export default function EventDetails() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", padding: 16, paddingTop: 12 },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#111",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
   banner: { width: "100%", height: 220, resizeMode: "cover" },
   title: { color: "#fff", fontSize: 22, fontWeight: "900", marginTop: 8 },
   infoRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },

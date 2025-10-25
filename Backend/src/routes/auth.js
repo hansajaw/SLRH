@@ -2,6 +2,10 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import { OAuth2Client } from "google-auth-library";
+import axios from "axios";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = express.Router();
 
@@ -97,6 +101,49 @@ router.post("/forgot", async (req, res) => {
   } catch (err) {
     console.error("❌ Forgot error:", err.message, err.stack);
     res.status(500).json({ message: err?.message || "Server error during password reset." });
+  }
+});
+
+router.post("/social-login", async (req, res) => {
+  try {
+    const { provider, token } = req.body;
+    let email, name;
+
+    if (provider === "google") {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      email = payload.email;
+      name = payload.name;
+    } else if (provider === "facebook") {
+      const { data } = await axios.get(
+        `https://graph.facebook.com/me?access_token=${token}&fields=email,name`
+      );
+      email = data.email;
+      name = data.name;
+    } else {
+      return res.status(400).json({ message: "Invalid provider." });
+    }
+
+    if (!email) {
+      return res.status(400).json({ message: "Email not provided by social provider." });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({ email, name, authProvider: provider });
+    }
+
+    const jwtToken = signToken(user._id);
+    user.password = undefined;
+
+    res.status(200).json({ token: jwtToken, user });
+  } catch (err) {
+    console.error("❌ Social login error:", err.message, err.stack);
+    res.status(500).json({ message: err?.message || "Server error during social login." });
   }
 });
 

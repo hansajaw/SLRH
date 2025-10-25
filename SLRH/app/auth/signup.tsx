@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +17,11 @@ import { AxiosError } from "axios";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
 import { api } from "../../lib/api";
+import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
+import * as WebBrowser from "expo-web-browser";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -25,7 +32,51 @@ export default function Signup() {
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { login } = useUser();
+  const { login, socialLogin } = useUser();
+
+  const [_, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  });
+
+  const [__, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type === "success") {
+      const { authentication } = googleResponse;
+      if (authentication) {
+        handleSocialLogin("google", authentication.accessToken);
+      }
+    }
+  }, [googleResponse]);
+
+  useEffect(() => {
+    if (fbResponse?.type === "success") {
+      const { authentication } = fbResponse;
+      if (authentication) {
+        handleSocialLogin("facebook", authentication.accessToken);
+      }
+    }
+  }, [fbResponse]);
+
+  async function handleSocialLogin(provider: "google" | "facebook", token: string) {
+    try {
+      setLoading(true);
+      const { data } = await api.post(`/auth/social-login`, { provider, token });
+      await socialLogin(data.user, data.token);
+      Alert.alert("Welcome", "Logged in successfully!");
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      console.error("Social login error:", e?.response?.data || e?.message || e);
+      Alert.alert("Login failed", "Unable to login with social account.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function validate() {
     console.log("Validating signup:", { email, pw, pw2, agree });
@@ -74,7 +125,9 @@ export default function Signup() {
 
   return (
     <SafeScreen bg="#0b0b0b">
-      <LinearGradient
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          <LinearGradient
         colors={["#0E2322", "#0b0b0b"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -149,6 +202,30 @@ export default function Signup() {
           <Text style={s.primaryText}>{loading ? "Please wait…" : "Continue"}</Text>
         </Pressable>
 
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 24 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: "#1a2232" }} />
+          <Text style={{ color: "#9adbd2", fontWeight: "600" }}>OR</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: "#1a2232" }} />
+        </View>
+
+        <Pressable
+          onPress={() => googlePromptAsync()}
+          style={[s.socialBtn, loading && { opacity: 0.6 }]}
+          disabled={loading}
+        >
+          <Ionicons name="logo-google" size={18} color="#00E0C6" />
+          <Text style={s.socialText}>Continue with Google</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => fbPromptAsync()}
+          style={[s.socialBtn, loading && { opacity: 0.6, marginTop: 12 }]}
+          disabled={loading}
+        >
+          <Ionicons name="logo-facebook" size={18} color="#00E0C6" />
+          <Text style={s.socialText}>Continue with Facebook</Text>
+        </Pressable>
+
         <Text style={[s.footerText, { marginTop: 20 }]}>
           Already have an account?{" "}
           <Text style={s.link} onPress={() => router.push("/auth/login")}>
@@ -156,6 +233,8 @@ export default function Signup() {
           </Text>
         </Text>
       </ScrollView>
+    </View>
+    </TouchableWithoutFeedback>
     </SafeScreen>
   );
 }
@@ -207,4 +286,20 @@ const s = StyleSheet.create({
   },
   primaryText: { color: "#001018", fontWeight: "900", fontSize: 16 },
   footerText: { color: "#9adbd2", textAlign: "center", fontWeight: "600" },
+  socialBtn: {
+    height: 50,
+    backgroundColor: "#101418",
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#1a2232",
+  },
+  socialText: {
+    color: "#EFFFFB",
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
 });

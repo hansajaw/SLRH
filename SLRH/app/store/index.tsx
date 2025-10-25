@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TopBar from "../../components/TopBar";
+import Header from "../../components/Header";
 import { useRouter } from "expo-router";
 
 const BASE =
@@ -28,7 +29,6 @@ type Product = {
 };
 
 export default function StoreScreen() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,7 +56,7 @@ export default function StoreScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="SLRH Store" showBack={false} />
+        <Header title="SLRH Store" />
         <View style={styles.center}>
           <ActivityIndicator color="#00E0C6" size="large" />
           <Text style={{ color: "#9ca3af", marginTop: 10 }}>
@@ -70,7 +70,7 @@ export default function StoreScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="SLRH Store" showBack={false} />
+        <Header title="SLRH Store" />
         <View style={styles.center}>
           <Text style={{ color: "#ff6666", fontWeight: "600" }}>{error}</Text>
         </View>
@@ -81,7 +81,7 @@ export default function StoreScreen() {
   if (!products.length) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="SLRH Store" showBack={false} />
+        <Header title="SLRH Store" />
         <View style={styles.center}>
           <Text style={{ color: "#fff" }}>No products available</Text>
         </View>
@@ -91,7 +91,7 @@ export default function StoreScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="SLRH Store" showBack={false} />
+      <Header title="SLRH Store" />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Available Products</Text>
         <View style={styles.grid}>

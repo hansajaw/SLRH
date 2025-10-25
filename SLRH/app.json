@@ -2,19 +2,16 @@
   "expo": {
     "name": "SLRH",
     "slug": "slrh",
-    "owner": "kasperdul",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "slrh",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kasperdul.slrh"
     },
-
     "android": {
       "package": "com.kasperdul.slrh",
       "adaptiveIcon": {
@@ -24,12 +21,10 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/images/icon.png"
     },
-
     "plugins": [
       "expo-router",
       [
@@ -46,25 +41,19 @@
       "expo-font",
       "expo-web-browser"
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
-
-    "extra": {
-      "apiUrl": "https://slrh-4cql.vercel.app/api/v1",
-      "eas": {
-        "projectId": "f4de3798-8068-4011-9c71-2d8b3a73c64e"
-      }
-    },
-
     "runtimeVersion": {
       "policy": "appVersion"
     },
-
-    "updates": {
-      "url": "https://u.expo.dev/f4de3798-8068-4011-9c71-2d8b3a73c64e"
-    }
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "530391c7-436d-4d6a-a8b5-fcb2a6ae36c6"
+      }
+    },
+    "owner": "pmperera"
   }
 }

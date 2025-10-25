@@ -4,13 +4,19 @@ import bcrypt from "bcryptjs";
 const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true, minlength: 6, select: false },
+    password: { 
+      type: String, 
+      minlength: 6, 
+      select: false, 
+      required: function() { return !this.authProvider; } 
+    },
     fullName: { type: String },
     phone: { type: String },
     address1: { type: String },
     address2: { type: String },
     city: { type: String },
     zip: { type: String },
+    authProvider: { type: String, enum: ["google", "facebook"] },
     avatarUri: { type: String },
     caption: { type: String },
     resetToken: { type: String },

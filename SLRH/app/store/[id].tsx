@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import TopBar from "../../components/TopBar";
+import Header from "../../components/Header";
 import { useCart } from "../../context/CartContext";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -39,7 +40,6 @@ const fmt = (n: number) => `Rs. ${n.toLocaleString()}`;
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams();
-  const router = useRouter();
   const { addToCart } = useCart();
 
   const [p, setP] = useState<Product | null>(null);
@@ -111,16 +111,7 @@ export default function ProductDetail() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe}>
-        <TopBar
-          title="Product"
-          showBack
-          showMenu={false}
-          showSearch={false}
-          showProfile={false}
-          onBackPress={() =>
-            router.canGoBack() ? router.back() : router.push("/store" as any)
-          }
-        />
+        <Header title="Product" />
         <View style={s.center}>
           <ActivityIndicator color="#00E0C6" size="large" />
           <Text style={{ color: "#9ca3af", marginTop: 10 }}>Loading…</Text>
@@ -132,16 +123,7 @@ export default function ProductDetail() {
   if (!p) {
     return (
       <SafeAreaView style={s.safe}>
-        <TopBar
-          title="Product"
-          showBack
-          showMenu={false}
-          showSearch={false}
-          showProfile={false}
-          onBackPress={() =>
-            router.canGoBack() ? router.back() : router.push("/store" as any)
-          }
-        />
+        <Header title="Product" />
         <View style={s.center}>
           <Text style={{ color: "#e5e7eb", fontSize: 16, fontWeight: "800" }}>
             {errorText || "Product not found."}
@@ -162,16 +144,7 @@ export default function ProductDetail() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <TopBar
-        title={p.title}
-        showBack
-        showMenu={false}
-        showSearch={false}
-        showProfile={false}
-        onBackPress={() =>
-          router.canGoBack() ? router.back() : router.push("/store" as any)
-        }
-      />
+      <Header title={p.title} />
 
       <ScrollView contentContainerStyle={s.container}>
         {!!p.image && (

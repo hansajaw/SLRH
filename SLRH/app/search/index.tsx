@@ -9,10 +9,12 @@ import {
   Image,
   Dimensions,
   Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
+import Header from "../../components/Header";
 
 import SegmentedBar from "../../components/SegmentedBar";
 import { getHomeData, type PlayerItem, type NewsItem } from "../data/home";
@@ -28,9 +30,6 @@ const asSrc = (s?: any) => (typeof s === "string" ? { uri: s } : s);
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
-  const [tab, setTab] = useState<TabKey>("All");
-  const [q, setQ] = useState("");
-  const [debounced, setDebounced] = useState("");
 
   /* ---------- Load static data ---------- */
   const { players, news: newsSeed } = useMemo(() => {
@@ -101,32 +100,9 @@ export default function SearchScreen() {
   /* -------------------- UI -------------------- */
   return (
     <SafeAreaView style={s.safe}>
-      <View style={[s.head, { paddingTop: Math.max(8, insets.top * 0.25) }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} style={s.iconBtn}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
-
-        <View style={s.searchBox}>
-          <Ionicons name="search" size={18} color="#9AA0A6" style={{ marginHorizontal: 8 }} />
-          <TextInput
-            ref={inputRef}
-            value={q}
-            onChangeText={setQ}
-            placeholder="Search drivers, videos, news…"
-            placeholderTextColor="#80878c"
-            style={s.input}
-            returnKeyType="search"
-            onSubmitEditing={() => Keyboard.dismiss()}
-          />
-          {!!q && (
-            <Pressable onPress={() => setQ("")} hitSlop={10} style={{ paddingHorizontal: 8 }}>
-              <Ionicons name="close-circle" size={18} color="#9AA0A6" />
-            </Pressable>
-          )}
-        </View>
-
-        <View style={{ width: 36 }} />
-      </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          <Header title="Search" />
 
       <SegmentedBar
         tabs={TABS}
@@ -183,7 +159,8 @@ export default function SearchScreen() {
           renderItem={({ item }) => <NewsRow n={item} />}
           ListEmptyComponent={<Empty q={debounced} />}
         />
-      )}
+        </View>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
@@ -267,26 +244,6 @@ function Empty({ q }: { q: string }) {
 /* -------------------- Styles -------------------- */
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
-  head: {
-    paddingHorizontal: PAD,
-    paddingBottom: 8,
-    backgroundColor: "#0b0b0b",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  searchBox: {
-    flex: 1,
-    height: 40,
-    backgroundColor: "#121519",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#1b2230",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  input: { flex: 1, color: "#fff", paddingVertical: 8, fontWeight: "700" },
   rowCard: {
     flexDirection: "row",
     alignItems: "center",

@@ -13,12 +13,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import Header from "../../components/Header";
 import { useUser } from "../../context/UserContext";
 
 export default function UserProfile() {
-  const { user, logout, updateAvatar } = useUser(); 
-  const insets = useSafeAreaInsets();
-  const [uploading, setUploading] = useState(false);
+  const { user, logout, updateAvatar } = useUser();
 
   const me = useMemo(
     () => ({
@@ -85,30 +84,8 @@ export default function UserProfile() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
+      <Header title="My Profile" />
       <ScrollView contentContainerStyle={{ paddingBottom: 20 + insets.bottom }} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <LinearGradient colors={['#1a1a1a', '#0b0b0b']} style={s.header}>
-          <Pressable onPress={() => router.back()} style={s.backBtn}>
-            <Text style={s.backIcon}>‹</Text>
-            <Text style={s.backTxt}>Back</Text>
-          </Pressable>
-
-          <View style={s.avatarWrap}>
-            {me.avatarUri ? (
-              <Image source={{ uri: me.avatarUri }} style={s.avatar} />
-            ) : (
-              <View style={[s.avatar, s.avatarFallback]}>
-                <Text style={s.avatarInitial}>{me.fullName?.[0] ?? "U"}</Text>
-              </View>
-            )}
-            <Pressable style={s.cameraBtn} onPress={pickAvatar}>
-              <Ionicons name={uploading ? "time-outline" : "camera-outline"} size={18} color="#000" />
-            </Pressable>
-          </View>
-
-          <Text style={s.name}>{me.fullName}</Text>
-          <Text style={s.email}>{me.email}</Text>
-        </LinearGradient>
 
         {/* Contact Info */}
         <View style={s.section}>
@@ -168,53 +145,6 @@ function InfoRow({ icon, label, value, flex }: { icon: keyof typeof Ionicons.gly
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0b0b0b" },
-
-  header: {
-    paddingTop: 16,
-    paddingBottom: 24,
-    alignItems: "center",
-  },
-  backBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    paddingHorizontal: 16,
-    gap: 4,
-    marginBottom: 16,
-  },
-  backIcon: { color: "#fff", fontSize: 28, fontWeight: "400", marginTop: -2 },
-  backTxt: { color: "#fff", fontSize: 16, fontWeight: "700" },
-
-  avatarWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: "#00E0C6",
-    marginBottom: 12,
-    position: "relative",
-  },
-  avatar: { width: 94, height: 94, borderRadius: 47 },
-  avatarFallback: {
-    backgroundColor: "#1a1a1a",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitial: { color: "#00E0C6", fontWeight: "900", fontSize: 32 },
-  cameraBtn: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#00E0C6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  name: { color: "#fff", fontSize: 22, fontWeight: "900", marginBottom: 4 },
-  email: { color: "#999", fontSize: 14, fontWeight: "600" },
 
   section: { padding: 16, paddingTop: 8 },
   sectionTitle: { color: "#fff", fontSize: 14, fontWeight: "700", marginBottom: 12, letterSpacing: 0.5 },

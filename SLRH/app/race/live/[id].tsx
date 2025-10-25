@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { WebView } from "react-native-webview";
 import SafeScreen from "../../../components/SafeScreen";
+import Header from "../../../components/Header";
 import TopBar from "../../../components/TopBar";
 import { useLiveContext } from "../../../context/LiveContext";
 import LiveChat from "./components/LiveChat";
@@ -19,7 +20,6 @@ import FanLeaderboard from "./components/FanLeaderboard";
 const { width } = Dimensions.get("window");
 
 export default function LiveRaceScreen() {
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const liveStreams = useLiveContext();
 
@@ -46,16 +46,7 @@ export default function LiveRaceScreen() {
 
   return (
     <SafeScreen>
-      <TopBar
-        title="🔴 Live Race Coverage"
-        showBack
-        showMenu={false}
-        showSearch={false}
-        showProfile={false}
-        onBackPress={() =>
-          router.canGoBack() ? router.back() : router.push("../race")
-        }
-      />
+      <Header title="Live Race Coverage" />
 
       <ScrollView contentContainerStyle={s.container}>
         {liveVideoId ? (

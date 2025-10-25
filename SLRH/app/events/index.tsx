@@ -8,6 +8,8 @@ import {
   Pressable,
 } from 'react-native';
 import { Link } from 'expo-router';
+import Header from '../../components/Header';
+import SafeScreen from '../../components/SafeScreen';
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:3001';
 
@@ -94,7 +96,9 @@ export default function Home() {
   }, []);
 
   return (
-    <FlatList
+    <SafeScreen bg="#0b0b0b">
+      <Header title="Events" />
+      <FlatList
       style={{ flex: 1, backgroundColor: '#0b0b0b' }}
       contentContainerStyle={{ padding: 16, paddingTop: 24 }}
       data={items}
@@ -107,5 +111,6 @@ export default function Home() {
         <Text style={{ color: '#fff', padding: 16 }}>No events yet.</Text>
       }
     />
+    </SafeScreen>
   );
 }

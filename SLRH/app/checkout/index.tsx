@@ -7,16 +7,17 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TopBar from "../../components/TopBar";
+import Header from "../../components/Header";
 import { useRouter } from "expo-router";
 import { useCart } from "../../context/CartContext";
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3001";
 
 export default function CheckoutScreen() {
-  const router = useRouter();
   const { items, total, clearCart } = useCart();
 
   // 🧍 Customer
@@ -81,15 +82,9 @@ export default function CheckoutScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <TopBar
-        title="Checkout"
-        showBack
-        showMenu={false}
-        showSearch={false}
-        showProfile={false}
-        onBackPress={() => router.replace("/cart" as any)}
-      />
-      <ScrollView contentContainerStyle={s.container}>
+      <Header title="Checkout" />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={s.container}>
         <Text style={s.sectionTitle}>Customer Details</Text>
         <TextInput style={s.input} placeholder="Full Name *" placeholderTextColor="#666" value={name} onChangeText={setName} />
         <TextInput style={s.input} placeholder="Phone Number *" placeholderTextColor="#666" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
@@ -138,6 +133,7 @@ export default function CheckoutScreen() {
           <Text style={s.confirmText}>Place Order</Text>
         </Pressable>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }

@@ -27,6 +27,7 @@ type Ctx = {
   loadMe(): Promise<void>;
   changePassword(oldPassword: string, newPassword: string): Promise<void>;
   logout(): Promise<void>;
+  socialLogin(user: User, token: string): Promise<void>;
 };
 
 const UserCtx = createContext<Ctx>(null as any);
@@ -160,6 +161,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function socialLogin(user: User, token: string) {
+    try {
+      console.log("🤝 Social login:", { token: token.substring(0, 10) + "...", user });
+      setToken(token);
+      setUser(user);
+      await AsyncStorage.setItem("token", token);
+      await AsyncStorage.setItem("user", JSON.stringify(user));
+    } catch (err) {
+      console.warn("⚠️ Social login error:", err);
+      throw err;
+    }
+  }
+
   return (
     <UserCtx.Provider
       value={{
@@ -173,6 +187,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         loadMe,
         changePassword,
         logout,
+        socialLogin,
       }}
     >
       {children}

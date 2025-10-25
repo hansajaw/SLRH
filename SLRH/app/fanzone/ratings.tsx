@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
-import TopBar from "../../components/TopBar";
+import Header from "../../components/Header";
 import SegmentedBar from "../../components/SegmentedBar";
 
 /* ---------- UI types ---------- */
@@ -227,7 +227,7 @@ export default function RatingsScreen() {
 
   return (
     <SafeAreaView style={st.safe}>
-      <TopBar title="Fan Ratings" showBack showMenu={false} showSearch={false} showProfile={false} />
+      <Header title="Fan Ratings" />
       <FlatList
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 88 }}

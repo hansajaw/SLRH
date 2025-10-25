@@ -1,12 +1,12 @@
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, Text, StyleSheet } from "react-native";
-import TopBar from "../../components/TopBar";
+import Header from "../../components/Header";
 
 export default function AboutScreen() {
   return (
     <SafeAreaView style={s.safe}>
-      <TopBar title="About Us" showBack={true} showMenu={false} showSearch={false} showProfile={false} />
+      <Header title="About Us" />
       <ScrollView contentContainerStyle={s.container}>
         <Text style={s.title}>ℹ️ About SLRH</Text>
         <Text style={s.text}>
