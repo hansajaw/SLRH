@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -35,7 +35,7 @@ export default function Signup() {
   const { login, socialLogin } = useUser();
 
   const [_, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -189,8 +189,8 @@ export default function Signup() {
             {agree && <Ionicons name="checkmark" size={16} color="#001018" />}
           </View>
           <Text style={s.agreeText}>
-            I agree to the <Text style={s.link}>Terms of Service</Text> and{" "}
-            <Text style={s.link}>Privacy Policy</Text>.
+            I agree to the <Text style={s.link} onPress={() => router.push("/auth/terms")}>Terms of Service</Text> and{" "}
+            <Text style={s.link} onPress={() => router.push("/auth/terms")}>Privacy Policy</Text>.
           </Text>
         </Pressable>
 

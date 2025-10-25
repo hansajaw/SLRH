@@ -9,6 +9,7 @@ import { useUser } from "../../context/UserContext";
 export default function EditProfile() {
   const { user, updateProfile } = useUser();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [form, setForm] = useState({
     fullName: user?.fullName || "",

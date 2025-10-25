@@ -1,90 +1,100 @@
-// app/data/racing.ts
-import type { ImageSourcePropType } from "react-native";
+import { RaceEvent, LiveItem, ResultRow, StandingRow } from "./type";
 
-export type RaceEvent = {
-  id: string;
-  title: string;
-  circuit?: string;
-  city?: string;
-  scheduledAt: string; // ISO time
-  banner?: string | ImageSourcePropType;
-  description?: string; // ✅ added
-};
-
-export type LiveItem = {
-  id: string;
-  title: string;
-  startedAt: string; // ISO
-  status: "LIVE" | "UPCOMING" | "ENDED";
-  thumbnail?: string | ImageSourcePropType;
-};
-
-export type ResultRow = {
-  id: string;
-  title: string;
-  occurredAt: string; // ISO
-  podium: { place: 1 | 2 | 3; name: string }[];
-  banner?: string | ImageSourcePropType;
-};
-
-export type StandingRow = {
-  rank: number;
-  driver: string;
-  team?: string;
-  points: number;
-  avatar?: string | ImageSourcePropType;
-};
-
-/* --------- seed (replace with your API/DB) --------- */
-export const SCHEDULE: RaceEvent[] = [
+/* -------------------------------------------------------------------------- */
+/*                                RACE EVENTS                                 */
+/* -------------------------------------------------------------------------- */
+const raceEvents: RaceEvent[] = [
   {
-    id: "race-colombo-2025",
-    title: "Colombo Grand Prefix 2025",
+    _id: "re1",
+    title: "Colombo Grand Prix 2025",
     city: "Colombo",
-    circuit: "Marine Drive",
-    scheduledAt: "2025-09-09T07:00:00Z",
-    banner: require("../../assets/races/colombo.jpg"),
+    date: "2025-02-20",
+    heroImage: "https://i.ibb.co/jz123/event1.png",
   },
   {
-    id: "race-nuwara-2025",
-    title: "Nuwara Eliya Championship",
-    city: "Nuwara Eliya",
-    circuit: "Race Course",
-    scheduledAt: "2025-09-08T14:45:00Z",
-    banner: require("../../assets/races/nuwara.jpg"),
+    _id: "re2",
+    title: "Kandy Hill Challenge 2025",
+    city: "Kandy",
+    date: "2025-03-15",
+    heroImage: "https://i.ibb.co/jz456/event2.png",
   },
 ];
 
-export const LIVE: LiveItem[] = [
+/* -------------------------------------------------------------------------- */
+/*                                 LIVE ITEMS                                 */
+/* -------------------------------------------------------------------------- */
+const liveStreams: LiveItem[] = [
   {
-    id: "live-1",
-    title: "Practice Session – Colombo",
-    startedAt: new Date().toISOString(),
-    status: "LIVE",
-    thumbnail: require("../../assets/races/colombo.jpg"),
+    _id: "lv1",
+    title: "Live: Colombo GP Qualifiers",
+    youtubeId: "xYz12345",
+    thumbnail: "https://i.ibb.co/live1.png",
+    duration: "2h 14m",
+    publishedAt: "2025-02-19",
+  },
+  {
+    _id: "lv2",
+    title: "Live: Kandy Hill Highlights",
+    youtubeId: "yAb56789",
+    thumbnail: "https://i.ibb.co/live2.png",
+    duration: "1h 40m",
+    publishedAt: "2025-03-14",
   },
 ];
 
-export const RESULTS: ResultRow[] = [
+/* -------------------------------------------------------------------------- */
+/*                                RACE RESULTS                                */
+/* -------------------------------------------------------------------------- */
+const raceResults: ResultRow[] = [
   {
-    id: "res-colombo-2025",
-    title: "Colombo Grand Prefix 2025 — Recap",
-    occurredAt: "2025-09-09T10:30:00Z",
-    banner: require("../../assets/races/colombo.jpg"),
-    podium: [
-      { place: 1, name: "Kumudu Rathnayaka" },
-      { place: 2, name: "Manel Gunasekara" },
-      { place: 3, name: "A. Perera" },
+    _id: "rs1",
+    slug: "colombo-gp-results",
+    title: "Colombo GP 2025 Official Results",
+    occurredAt: "2025-02-20",
+    banner: "https://i.ibb.co/results1.png",
+    topFinishers: [
+      { place: 1, name: "John Perera" },
+      { place: 2, name: "Kavindu Silva" },
+      { place: 3, name: "Amal Fernando" },
+    ],
+  },
+  {
+    _id: "rs2",
+    slug: "kandy-hill-results",
+    title: "Kandy Hill Challenge 2025 Results",
+    occurredAt: "2025-03-15",
+    banner: "https://i.ibb.co/results2.png",
+    topFinishers: [
+      { place: 1, name: "Saman Jayasuriya" },
+      { place: 2, name: "Ruwan De Silva" },
+      { place: 3, name: "Nuwan Jayawardena" },
     ],
   },
 ];
 
-export const STANDINGS: StandingRow[] = [
-  { rank: 1, driver: "Kumudu Rathnayaka", team: "Thunder Riders", points: 86 },
-  { rank: 2, driver: "Manel Gunasekara", team: "Colombo Speedsters", points: 79 },
-  { rank: 3, driver: "A. Perera", team: "Thunder Riders", points: 63 },
+/* -------------------------------------------------------------------------- */
+/*                                STANDINGS                                  */
+/* -------------------------------------------------------------------------- */
+const standings: StandingRow[] = [
+  {
+    _id: "st1",
+    slug: "season-2025-standings",
+    title: "Season 2025 Driver Standings",
+    occurredAt: "2025-05-01",
+    banner: "https://i.ibb.co/standing1.png",
+  },
 ];
 
-export function getRacingData() {
-  return { schedule: SCHEDULE, live: LIVE, results: RESULTS, standings: STANDINGS };
+/* -------------------------------------------------------------------------- */
+/*                             EXPORTED FUNCTION                              */
+/* -------------------------------------------------------------------------- */
+export async function getRacingData() {
+  return {
+    events: raceEvents,
+    live: liveStreams,
+    results: raceResults,
+    standings,
+  };
 }
+
+export { raceEvents, liveStreams, raceResults, standings };

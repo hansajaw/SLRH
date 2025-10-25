@@ -10,6 +10,7 @@ const THEMES: ThemeChoice[] = ["System", "Light", "Dark"];
 
 export default function ThemeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { theme, setTheme } = useSettings();
 
   return (
@@ -25,7 +26,6 @@ export default function ThemeScreen() {
             </Pressable>
           ))}
         </View>
-        <Text style={s.hint}>Connect this to your theme provider to apply app-wide.</Text>
       </ScrollView>
     </SafeAreaView>
   );

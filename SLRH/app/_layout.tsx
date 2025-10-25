@@ -1,7 +1,10 @@
 // app/_layout.tsx
 import "react-native-gesture-handler";
 import * as React from "react";
-import { StatusBar, BackHandler, Alert } from "react-native";
+import { StatusBar, BackHandler, Alert, Appearance } from "react-native";
+import { useSettings } from "../app/store/settings";
+
+export const ThemeContext = React.createContext<"light" | "dark">("dark");
 import { Drawer } from "expo-router/drawer";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -42,37 +45,32 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
 
+  const { theme: themePreference } = useSettings();
+  const [colorScheme, setColorScheme] = React.useState(Appearance.getColorScheme());
+
   // ✅ Preload Ionicons font
   const [fontsLoaded] = useFonts({
     ...Ionicons.font,
   });
 
   React.useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setColorScheme(colorScheme);
+    });
+    return () => subscription.remove();
+  }, []);
+
+  const currentTheme = React.useMemo(() => {
+    if (themePreference === "System") {
+      return (colorScheme === "dark" ? "dark" : "light");
+    } else {
+      return themePreference.toLowerCase() as "light" | "dark";
+    }
+  }, [themePreference, colorScheme]);
+
+  React.useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
-
-  // ✅ Global back button handler
-  React.useEffect(() => {
-    const backAction = () => {
-      if (router.canGoBack()) {
-        router.back();
-        return true;
-      }
-      if (segments.length === 1 && segments[0] === "(tabs)") {
-        Alert.alert("Exit SLRH", "Do you want to close the app?", [
-          { text: "Cancel", style: "cancel" },
-          { text: "Exit", onPress: () => BackHandler.exitApp() },
-        ]);
-        return true;
-      }
-      router.replace("/(tabs)");
-      return true;
-    };
-    const subscription = BackHandler.addEventListener("hardwareBackPress", backAction);
-    return () => subscription.remove();
-  }, [router, segments]);
-
-  if (!fontsLoaded) return null; 
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -80,9 +78,10 @@ export default function RootLayout() {
         <UserProvider>
           <CartProvider>
             <LiveProvider>
-              <AuthGate>
-                <StatusBar barStyle="light-content" />
-                <Drawer
+              <ThemeContext.Provider value={currentTheme}>
+                <AuthGate>
+                  <StatusBar barStyle={currentTheme === "dark" ? "light-content" : "dark-content"} />
+                  <Drawer
                   drawerContent={(props) => <SideMenu {...props} />}
                   screenOptions={{
                     headerShown: false,
@@ -107,7 +106,8 @@ export default function RootLayout() {
                   <Drawer.Screen name="race/live/[id]" options={{ drawerItemStyle: { display: "none" } }} />
                   <Drawer.Screen name="racing/[id]" options={{ drawerItemStyle: { display: "none" } }} />
                 </Drawer>
-              </AuthGate>
+                </AuthGate>
+              </ThemeContext.Provider>
             </LiveProvider>
           </CartProvider>
         </UserProvider>

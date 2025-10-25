@@ -94,6 +94,7 @@ function CartItemCard({
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const cart = useCart() as any;
 
   const { items, removeFromCart, total } = cart;

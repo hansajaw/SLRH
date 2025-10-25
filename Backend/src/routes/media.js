@@ -1,50 +1,48 @@
-// src/routes/media.js
-import { Router } from "express";
-import { Video, Album, MediaImage, News } from "../models/media.js";
-import isDev from "../middleware/isDev.js";
+import express from "express";
+import Media from "../models/media.js";
 
-const r = Router();
+const router = express.Router();
 
-/* ------- PUBLIC READ ROUTES ------- */
-r.get("/videos", async (_req, res) => {
-  const data = await Video.find().sort({ createdAt: -1 }).lean();
-  res.json(data);
+// GET all media files
+router.get("/", async (req, res) => {
+  try {
+    const media = await Media.find();
+    res.status(200).json({ items: media });
+  } catch (err) {
+    console.error("❌ Get media error:", err.message, err.stack);
+    res.status(500).json({ message: err?.message || "Server error while fetching media." });
+  }
 });
 
-r.get("/albums", async (_req, res) => {
-  const data = await Album.find().sort({ createdAt: -1 }).lean();
-  res.json(data);
+// POST a new media file (placeholder for upload)
+router.post("/upload", async (req, res) => {
+  try {
+    // In a real application, you would use multer here to handle file uploads
+    // and then store the file in a cloud storage (e.g., S3, Cloudinary, Vercel Blob).
+    // For now, we'll just create a database entry with a placeholder URL.
+    const { url, type, category, title, description, thumbnailUrl, size, width, height } = req.body;
+
+    if (!url || !type) {
+      return res.status(400).json({ message: "URL and type are required." });
+    }
+
+    const newMedia = await Media.create({
+      url,
+      type,
+      category,
+      title,
+      description,
+      thumbnailUrl,
+      size,
+      width,
+      height,
+    });
+
+    res.status(201).json({ message: "Media created successfully.", item: newMedia });
+  } catch (err) {
+    console.error("❌ Upload media error:", err.message, err.stack);
+    res.status(500).json({ message: err?.message || "Server error during media upload." });
+  }
 });
 
-r.get("/albums/:id/images", async (req, res) => {
-  const data = await MediaImage.find({ album: req.params.id }).sort({ createdAt: -1 }).lean();
-  res.json(data);
-});
-
-r.get("/news", async (_req, res) => {
-  const data = await News.find().sort({ publishedAt: -1 }).lean();
-  res.json(data);
-});
-
-/* ------- DEV-ONLY WRITE ROUTES ------- */
-r.post("/videos", isDev, async (req, res) => {
-  const doc = await Video.create(req.body);
-  res.json(doc);
-});
-
-r.post("/albums", isDev, async (req, res) => {
-  const doc = await Album.create(req.body);
-  res.json(doc);
-});
-
-r.post("/albums/:id/images", isDev, async (req, res) => {
-  const doc = await MediaImage.create({ ...req.body, album: req.params.id });
-  res.json(doc);
-});
-
-r.post("/news", isDev, async (req, res) => {
-  const doc = await News.create(req.body);
-  res.json(doc);
-});
-
-export default r;
+export default router;

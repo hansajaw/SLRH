@@ -40,6 +40,7 @@ const fmt = (n: number) => `Rs. ${n.toLocaleString()}`;
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const { addToCart } = useCart();
 
   const [p, setP] = useState<Product | null>(null);

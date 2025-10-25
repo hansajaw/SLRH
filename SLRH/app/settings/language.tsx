@@ -10,6 +10,7 @@ const LANGS: LanguageChoice[] = ["English", "සිංහල", "தமிழ்"
 
 export default function LanguageScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { language, setLanguage } = useSettings();
 
   return (

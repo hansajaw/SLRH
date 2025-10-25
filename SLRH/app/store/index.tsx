@@ -29,6 +29,7 @@ type Product = {
 };
 
 export default function StoreScreen() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -8,6 +8,7 @@ import { useSettings } from "../store/settings";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const sset = useSettings();
 
   return (

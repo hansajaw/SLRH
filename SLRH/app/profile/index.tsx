@@ -17,7 +17,9 @@ import Header from "../../components/Header";
 import { useUser } from "../../context/UserContext";
 
 export default function UserProfile() {
-  const { user, logout, updateAvatar } = useUser();
+  const { user, logout, updateAvatar } = useUser(); 
+  const insets = useSafeAreaInsets();
+  const [uploading, setUploading] = useState(false);
 
   const me = useMemo(
     () => ({

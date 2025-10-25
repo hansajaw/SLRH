@@ -18,12 +18,10 @@ import {
   getAlbums,
   getAlbumImages,
   getNews,
-  type MediaVideo,
-  type Album,
-  type MediaImage,
-  type NewsItem,
 } from "../../data/media";
+import { MediaVideo, Album, MediaImage, NewsItem } from "../../data/type";
 import { useLocalSearchParams } from "expo-router";
+import Header from "../../../components/Header";
 import YoutubePlayer from "react-native-youtube-iframe";
 
 const TABS = ["Videos", "Images", "News"] as const;
@@ -118,9 +116,7 @@ export default function MediaScreen() {
 
   return (
     <SafeScreen bg="#0b0b0b">
-      <View style={s.header}>
-        <Text style={s.pageTitle}>Media</Text>
-      </View>
+      <Header title="Media" />
       <SegmentedBar tabs={TABS} value={tab} onChange={setTab} />
 
       <Animated.View style={{ flex: 1, opacity: fade }}>
@@ -378,8 +374,6 @@ export default function MediaScreen() {
 }
 
 const s = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
-  pageTitle: { color: "#EFFFFB", fontSize: 22, fontWeight: "900" },
   scrollPad: { padding: 12, paddingBottom: 80 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyWrap: { flex: 1, alignItems: "center", paddingTop: 80 },

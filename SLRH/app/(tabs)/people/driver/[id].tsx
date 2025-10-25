@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,41 +7,28 @@ import {
   ScrollView,
   Pressable,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
-import { LinearGradient } from 'expo-linear-gradient';
-import SegmentedBar from "../../../../components/SegmentedBar";   
-import { getDriverById } from "../../../data/people";      
-import { Ionicons } from "@expo/vector-icons";    
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import Header from "../../../../components/Header";
+import { LinearGradient } from "expo-linear-gradient";
+import SegmentedBar from "../../../../components/SegmentedBar";
+import { getDriverById } from "../../../data/people";
+import { DriverItem } from "../../../data/type";
 
-type DriverFull = ReturnType<typeof getDriverById> & {
-  profile?: {
-    vehicleType?: string;
-    club?: string;
-    nationality?: string;
-    age?: number;
-    rating?: number;
-    reviewsCount?: number;
-    stats?: {
-      races?: number;
-      trophies?: number;
-      firstPlaces?: number;
-      prizeMoneyLKR?: number;
-      winRate?: number;
-      avgPrizePerRace?: number;
-    };
-    personal?: { dob?: string; contact?: string; address?: string };
-    team?: string;
-    sponsors?: string[];
-    license?: { serial?: string; issueDate?: string; dueDate?: string };
-    highlights?: string[];
-    achievements?: string[];
-  };
-} | null | undefined;
+type Tabs = "Overview" | "Achievements" | "Highlights" | "Ratings";
 
-const money = (n?: number) => typeof n === "number" ? `LKR ${n.toLocaleString("en-LK")}` : "—";
-const dateFmt = (s?: string) => s ? new Date(s).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—";
+const money = (n?: number) =>
+  typeof n === "number" ? `LKR ${n.toLocaleString("en-LK")}` : "—";
+const dateFmt = (s?: string) =>
+  s
+    ? new Date(s).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "—";
 
 const { width: W } = Dimensions.get("window");
 
@@ -49,15 +36,53 @@ export default function DriverProfile() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const driver = (id ? (getDriverById(id) as DriverFull) : null) as DriverFull;
-  const [tab, setTab] = useState<"Overview" | "Achievements" | "Highlights" | "Ratings">("Overview");
+
+  const [driver, setDriver] = useState<DriverItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [tab, setTab] = useState<Tabs>("Overview");
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        if (id) {
+          const data = await getDriverById(String(id));
+          if (active) setDriver(data ?? null);
+        } else {
+          if (active) setDriver(null);
+        }
+      } catch (e) {
+        if (active) setDriver(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color="#00E0C6" size="large" />
+          <Text style={{ color: "#999", marginTop: 12, fontWeight: "700" }}>
+            Loading driver...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!driver) {
     return (
-      <SafeAreaView style={s.safe}>
+      <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
         <View style={{ padding: 16 }}>
           <Text style={s.miss}>Driver not found.</Text>
-          <Link href="/(tabs)/people" style={s.link}>← Back to People</Link>
+          <Link href="/(tabs)/people" style={s.link}>
+            ← Back to People
+          </Link>
         </View>
       </SafeAreaView>
     );
@@ -68,11 +93,14 @@ export default function DriverProfile() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 + insets.bottom }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
+        showsVerticalScrollIndicator={false}
+      >
         <Header title="Player Profile" />
         <View style={s.hero}>
-          <LinearGradient colors={['#1a1a1a', '#0b0b0b']} style={s.heroGrad} />
-          
+          <LinearGradient colors={["#1a1a1a", "#0b0b0b"]} style={s.heroGrad} />
+
           <View style={s.heroContent}>
             <View style={s.avatarWrap}>
               {driver.avatar ? (
@@ -128,7 +156,7 @@ export default function DriverProfile() {
                 <Text style={s.subHead}>Sponsors</Text>
                 {p.sponsors?.length ? (
                   <View style={s.tags}>
-                    {p.sponsors.map((sp) => (
+                    {p.sponsors.map((sp: string) => (
                       <View key={sp} style={s.tag}>
                         <Text style={s.tagTxt}>{sp}</Text>
                       </View>
@@ -146,7 +174,10 @@ export default function DriverProfile() {
               </Card>
 
               <Card title="Performance">
-                <Row label="Win Rate" value={`${Math.round((st.winRate ?? 0) * 100)}%`} />
+                <Row
+                  label="Win Rate"
+                  value={`${Math.round((st.winRate ?? 0) * 100)}%`}
+                />
                 <Row label="Avg Prize/Race" value={money(st.avgPrizePerRace)} />
               </Card>
             </>
@@ -155,7 +186,7 @@ export default function DriverProfile() {
           {tab === "Achievements" && (
             <Card title="Achievements">
               {p.achievements?.length ? (
-                p.achievements.map((a, i) => (
+                p.achievements.map((a: string, i: number) => (
                   <View key={i} style={s.bullet}>
                     <Text style={s.bulletDot}>•</Text>
                     <Text style={s.bulletTxt}>{a}</Text>
@@ -170,7 +201,7 @@ export default function DriverProfile() {
           {tab === "Highlights" && (
             <Card title="Highlights">
               {p.highlights?.length ? (
-                p.highlights.map((h, i) => (
+                p.highlights.map((h: string, i: number) => (
                   <View key={i} style={s.bullet}>
                     <Text style={s.bulletDot}>•</Text>
                     <Text style={s.bulletTxt}>{h}</Text>
@@ -188,10 +219,12 @@ export default function DriverProfile() {
                 <View style={s.ratingLarge}>
                   <Text style={s.ratingNum}>{p.rating ?? 0}</Text>
                   <Text style={s.ratingStars}>⭐⭐⭐⭐⭐</Text>
-                  <Text style={s.ratingCount}>Based on {p.reviewsCount ?? 0} reviews</Text>
+                  <Text style={s.ratingCount}>
+                    Based on {p.reviewsCount ?? 0} reviews
+                  </Text>
                 </View>
               </View>
-              <Pressable style={s.btn}>
+              <Pressable style={s.btn} onPress={() => {}}>
                 <Text style={s.btnTxt}>Rate this Driver</Text>
               </Pressable>
             </Card>
@@ -211,11 +244,21 @@ function Chip({ text }: { text: string }) {
   );
 }
 
-function Stat({ icon, label, value }: { icon: string; label: string; value: string }) {
+function Stat({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+}) {
   return (
     <View style={s.stat}>
       <Text style={s.statIcon}>{icon}</Text>
-      <Text style={s.statVal} numberOfLines={1}>{value}</Text>
+      <Text style={s.statVal} numberOfLines={1}>
+        {value}
+      </Text>
       <Text style={s.statLbl}>{label}</Text>
     </View>
   );
@@ -265,8 +308,21 @@ const s = StyleSheet.create({
   },
   avatar: { width: 112, height: 112, borderRadius: 56 },
   name: { color: "#fff", fontSize: 24, fontWeight: "900", marginTop: 16 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12, paddingHorizontal: 16 },
-  chip: { backgroundColor: "#1a1a1a", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#333" },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 16,
+  },
+  chip: {
+    backgroundColor: "#1a1a1a",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
   chipTxt: { color: "#00E0C6", fontSize: 12, fontWeight: "700" },
   rating: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
   ratingTxt: { color: "#fff", fontSize: 16, fontWeight: "900" },
@@ -277,7 +333,7 @@ const s = StyleSheet.create({
     flexWrap: "wrap",
     padding: 16,
     gap: 12,
-    marginTop:20
+    marginTop: 20,
   },
   stat: {
     width: (W - 44) / 2,
@@ -300,7 +356,13 @@ const s = StyleSheet.create({
     borderColor: "#222",
   },
   cardTitle: { color: "#fff", fontSize: 16, fontWeight: "900" },
-  subHead: { color: "#00E0C6", fontSize: 14, fontWeight: "700", marginTop: 8, marginBottom: 8 },
+  subHead: {
+    color: "#00E0C6",
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 8,
+    marginBottom: 8,
+  },
 
   row: { marginBottom: 12 },
   lbl: { color: "#999", fontSize: 13, fontWeight: "600", marginBottom: 4 },
@@ -308,7 +370,12 @@ const s = StyleSheet.create({
   dim: { color: "#666", fontSize: 14, fontWeight: "600" },
 
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tag: { backgroundColor: "#00E0C6", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  tag: {
+    backgroundColor: "#00E0C6",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
   tagTxt: { color: "#000", fontSize: 12, fontWeight: "700" },
 
   bullet: { flexDirection: "row", gap: 8, marginBottom: 8 },

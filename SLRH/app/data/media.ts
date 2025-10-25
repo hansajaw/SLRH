@@ -1,152 +1,95 @@
 // app/data/media.ts
 import type { ImageSourcePropType } from "react-native";
 
-/* ---------- Types ---------- */
-export type MediaVideo = {
-  _id: string;
-  title: string;
-  youtubeId: string;
-  caption?: string;
-  thumbnail?: string | ImageSourcePropType;
-  duration?: string; 
-};
-
-export type Album = {
-  _id: string;
-  title: string;
-  cover?: string | ImageSourcePropType;
-};
-
-export type MediaImage = {
-  _id: string;
-  albumId: string;
-  src: string | ImageSourcePropType;
-  caption?: string;
-};
-
-export type NewsItem = {
-  _id: string;
-  title: string;
-  excerpt?: string;
-  body?: string;
-  banner?: string | ImageSourcePropType;
-  image?: string | ImageSourcePropType;
-  date?: string;
-};
-
-/* ---------- Sample Data ---------- */
-const VIDEOS: MediaVideo[] = [
-  {
-    _id: "v1",
-    title: "Thunder Riders Win Colombo GP 2024",
-    youtubeId: "dQw4w9WgXcQ", // placeholder
-    caption: "Full race highlights from Colombo Grand Prix 2024.",
-    thumbnail: require("../../assets/media/img1.jpg"),
-  },
-  {
-    _id: "v2",
-    title: "Southern GP Highlights",
-    youtubeId: "9bZkp7q19f0",
-    caption: "Intense Southern GP action with the top riders.",
-    thumbnail: require("../../assets/media//img2.jpg"),
-  },
-  {
-    _id: "v3",
-    title: "Behind the Scenes: Colombo Speedsters",
-    youtubeId: "3JZ_D3ELwOQ",
-    caption: "See how Colombo Speedsters prepare before each race.",
-    thumbnail: require("../../assets/media/img3.jpg"),
-  },
-];
-
-const ALBUMS: Album[] = [
-  {
-    _id: "a1",
-    title: "Kandy Hill Climb 2024",
-    cover: require("../../assets/media/img4.jpg"),
-  },
-  {
-    _id: "a2",
-    title: "Southern GP 2024",
-    cover: require("../../assets/media/img5.jpg"),
-  },
-];
-
-const IMAGES: MediaImage[] = [
-  {
-    _id: "i1",
-    albumId: "a1",
-    src: require("../../assets/media/img6.jpg"),
-    caption: "Kumudu Rathnayaka leading on turn 3.",
-  },
-  {
-    _id: "i2",
-    albumId: "a1",
-    src: require("../../assets/media/vid1.jpg"),
-    caption: "Podium ceremony after the race.",
-  },
-  {
-    _id: "i3",
-    albumId: "a2",
-    src: require("../../assets/media/vid2.jpg"),
-    caption: "Starting grid lineup at Southern GP 2024.",
-  },
-];
-
-const NEWS: NewsItem[] = [
-  {
-    _id: "n1",
-    title: "Thunder Riders Secure Back-to-Back Wins",
-    excerpt:
-      "Thunder Riders continue their dominance with a thrilling victory in Colombo Grand Prix 2024.",
-    body:
-      "In an electrifying race at Colombo GP 2024, Thunder Riders demonstrated exceptional skill and coordination. Lead rider I. Perera held the front position for most of the race, finishing 4.2 seconds ahead of his closest competitor.",
-    banner: require("../../assets/media/vid3.jpg"),
-    date: "2024-09-22",
-  },
-  {
-    _id: "n2",
-    title: "Rookie Manel Gunasekara Impresses at Southern GP",
-    excerpt:
-      "Manel Gunasekara secured a podium finish in her debut Southern GP race.",
-    body:
-      "The Southern GP 2024 saw a remarkable performance from Manel Gunasekara. Competing against seasoned riders, she managed to finish 3rd overall — a huge milestone for Sri Lanka’s female racing scene.",
-    banner: require("../../assets/media/img1.jpg"),
-    date: "2024-08-10",
-  },
-  {
-    _id: "n3",
-    title: "Inside Look at Colombo Speedsters Garage",
-    excerpt:
-      "A sneak peek at the meticulous preparation that goes into every race weekend.",
-    body:
-      "From tire management to data analysis, Colombo Speedsters' pit crew plays a crucial role in ensuring their success on the track.",
-    banner: require("../../assets/media/img2.jpg"),
-    date: "2024-06-15",
-  },
-];
+import api from "../../utils/api";
 
 /* ---------- Accessor Functions ---------- */
 export async function getVideos() {
-  return VIDEOS;
+  try {
+    const { data } = await api.get("/media", { params: { type: "video" } });
+    return data.items.map((item: any) => ({
+      _id: item._id,
+      title: item.title,
+      youtubeId: item.description, // Assuming youtubeId is stored in description for now
+      caption: item.description,
+      thumbnail: { uri: item.thumbnailUrl || item.url },
+      duration: "", // Backend doesn't provide duration yet
+    }));
+  } catch (error) {
+    console.error("Error fetching videos:", error);
+    return [];
+  }
 }
 
 export async function getAlbums() {
-  return ALBUMS;
+  try {
+    const { data } = await api.get("/media", { params: { type: "image", category: "albums" } });
+    // Assuming backend returns distinct albums or a way to group images into albums
+    // For now, let's create dummy albums based on categories if not explicitly provided
+    const albumsMap = new Map();
+    data.items.forEach((item: any) => {
+      if (item.category && !albumsMap.has(item.category)) {
+        albumsMap.set(item.category, {
+          _id: item.category,
+          title: item.category.charAt(0).toUpperCase() + item.category.slice(1),
+          cover: { uri: item.url },
+        });
+      }
+    });
+    return Array.from(albumsMap.values());
+  } catch (error) {
+    console.error("Error fetching albums:", error);
+    return [];
+  }
 }
 
-export async function getAlbumImages(albumId: string) {
-  return IMAGES.filter((img) => img.albumId === albumId);
+export async function getAlbumImages(albumId?: string) {
+  try {
+    const params: { type: string; category?: string } = { type: "image" };
+    if (albumId && albumId !== "all") {
+      params.category = albumId;
+    }
+    const { data } = await api.get("/media", { params });
+    return data.items.map((item: any) => ({
+      _id: item._id,
+      albumId: item.category,
+      src: { uri: item.url },
+      caption: item.title,
+    }));
+  } catch (error) {
+    console.error("Error fetching album images:", error);
+    return [];
+  }
 }
 
 export async function getNews() {
-  return NEWS;
+  try {
+    const { data } = await api.get("/media", { params: { category: "news" } });
+    return data.items.map((item: any) => ({
+      _id: item._id,
+      title: item.title,
+      excerpt: item.description,
+      body: item.description,
+      banner: { uri: item.url },
+      image: { uri: item.url },
+      date: item.uploadedAt, // Assuming uploadedAt can be used as date
+    }));
+  } catch (error) {
+    console.error("Error fetching news:", error);
+    return [];
+  }
 }
 
 /* ---------- Combined Accessor for Search ---------- */
-export function getMediaData() {
+export async function getMediaData() {
+  const videos = await getVideos();
+  const albums = await getAlbums();
+  // For images, we might need a separate call or a way to get all images not tied to a specific album
+  // For simplicity, let's assume getAlbumImages can fetch all images if albumId is null or a special value
+  const images = await getAlbumImages("all"); // Assuming "all" can fetch all images
   return {
-    videos: VIDEOS,
-    images: IMAGES,
+    videos,
+    images,
+    albums,
   };
 }

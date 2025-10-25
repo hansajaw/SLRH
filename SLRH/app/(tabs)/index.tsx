@@ -17,7 +17,8 @@ import SafeScreen from "../../components/SafeScreen";
 import TopBar from "../../components/TopBar";
 import { getUpcomingEvents, getResults, type Event } from "../data/events";
 import { getPeopleData } from "../data/people";
-import { getNews, type NewsItem } from "../data/media"; 
+import { getNews } from "../data/media";
+import { NewsItem, DriverItem, TeamItem } from "../data/type"; 
 
 const SP = 14;
 const BG = "#0b0b0b";
@@ -76,32 +77,32 @@ function NewsCard({ item }: { item: NewsItem }) {
   );
 }
 
-export default function HomeScreen() {
+export default async function HomeScreen() {
   const router = useRouter();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   const heroEvents = useMemo(() => getUpcomingEvents(5), []);
   const latestResults = useMemo(() => getResults().slice(0, 6), []);
-  const { drivers, teams } = getPeopleData();
+  const { drivers, teams, fame } = await getPeopleData();
 
   const topDrivers = useMemo(() => {
     return drivers
-      .map((d) => ({
+      .map((d: DriverItem) => ({
         ...d,
         winCount: parseInt(d.stats?.match(/\d+/)?.[0] || "0", 10),
       }))
-      .sort((a, b) => b.winCount - a.winCount)
+      .sort((a: { winCount: number }, b: { winCount: number }) => b.winCount - a.winCount)
       .slice(0, 5);
   }, [drivers]);
 
   const featuredTeams = useMemo(() => {
     return teams
-      .map((t) => ({
+      .map((t: TeamItem) => ({
         ...t,
         memberCount: t.members?.length || 0,
       }))
-      .sort((a, b) => b.memberCount - a.memberCount)
+      .sort((a: { memberCount: number }, b: { memberCount: number }) => b.memberCount - a.memberCount)
       .slice(0, 4);
   }, [teams]);
 
@@ -179,7 +180,7 @@ export default function HomeScreen() {
                 <Text style={styles.teamName}>{item.name}</Text>
                 <View style={styles.memberBadge}>
                   <Text style={styles.memberBadgeText}>
-                    {item.members.length} Members
+                    {item.members?.length} Members
                   </Text>
                 </View>
               </Pressable>

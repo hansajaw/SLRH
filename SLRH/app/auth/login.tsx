@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -31,10 +31,10 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { login } = useUser();
+  const { login, socialLogin } = useUser();
 
   const [_, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -191,6 +191,11 @@ export default function Login() {
                   </Text>
                 </Pressable>
               </View>
+              <Pressable onPress={() => router.push("/auth/terms")}>
+                <Text style={[s.small, { color: "#00E0C6", textAlign: "center", marginTop: S.md }]}>
+                  Terms and Conditions
+                </Text>
+              </Pressable>
             </View>
 
             <View style={{ gap: S.sm, marginTop: S.lg }}>

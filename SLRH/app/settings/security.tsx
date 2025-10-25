@@ -18,6 +18,7 @@ import api from "../../utils/api";
 
 export default function SecuritySettings() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [oldPwd, setOldPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
