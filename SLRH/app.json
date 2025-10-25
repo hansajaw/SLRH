@@ -8,6 +8,7 @@
     "scheme": "slrh",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "main": "expo-router/entry",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kasperdul.slrh"
@@ -45,14 +46,10 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": { "policy": "appVersion" },
     "extra": {
       "router": {},
-      "eas": {
-        "projectId": "530391c7-436d-4d6a-a8b5-fcb2a6ae36c6"
-      }
+      "eas": { "projectId": "530391c7-436d-4d6a-a8b5-fcb2a6ae36c6" }
     },
     "owner": "pmperera"
   }
