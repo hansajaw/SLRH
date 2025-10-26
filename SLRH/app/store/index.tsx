@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -9,29 +9,40 @@ import {
   StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TopBar from "../../components/TopBar";
 import { useRouter } from "expo-router";
+import { useTheme } from "../../context/ThemeContext";
+import SegmentedBar from "../../components/SegmentedBar";
+import BottomCartBar from "../../components/BottomCartBar";
 
 const BASE =
   process.env.EXPO_PUBLIC_API_URL ||
-  (__DEV__ ? "http://192.168.1.5:3001" : "https://slrh-4cql.vercel.app");
-// ⚠️ Replace 192.168.1.5 with YOUR computer’s IPv4 if testing locally
+  (__DEV__ ? "http://172.20.10.4:3001" : "https://slrh-4cql.vercel.app");
 
-type Product = {
+type StoreItem = {
   _id: string;
   title: string;
   price: number;
   image?: string;
-  category?: string;
+  category?: string; // "ticket" goes to Tickets; anything else -> Products
   rating?: number;
   quantity: number;
+  // Optional ticket-ish fields if you add them later
+  eventName?: string;
+  eventDate?: string; // ISO
+  venue?: string;
 };
 
+const TABS = ["Products", "Tickets"] as const;
+type TabKey = (typeof TABS)[number];
+
 export default function StoreScreen() {
+  const { palette } = useTheme();
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [items, setItems] = useState<StoreItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [tab, setTab] = useState<TabKey>("Products");
 
   useEffect(() => {
     (async () => {
@@ -40,7 +51,7 @@ export default function StoreScreen() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const j = await res.json();
         if (Array.isArray(j.items)) {
-          setProducts(j.items);
+          setItems(j.items);
         } else {
           throw new Error("Invalid data format");
         }
@@ -53,14 +64,26 @@ export default function StoreScreen() {
     })();
   }, []);
 
+  // Split into two groups based on category
+  const { productItems, ticketItems, current } = useMemo(() => {
+    const isTicket = (c?: string) => (c || "").toLowerCase().includes("ticket");
+    const productItems = items.filter((it) => !isTicket(it.category));
+    const ticketItems = items.filter((it) => isTicket(it.category));
+    const current = tab === "Products" ? productItems : ticketItems;
+    return { productItems, ticketItems, current };
+  }, [items, tab]);
+
+  /* ========== States: Loading, Error, Empty ========== */
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <TopBar title="SLRH Store" showBack={false} />
-        <View style={styles.center}>
-          <ActivityIndicator color="#00E0C6" size="large" />
-          <Text style={{ color: "#9ca3af", marginTop: 10 }}>
-            Loading products...
+      <SafeAreaView
+        style={[s.safe, { backgroundColor: palette.background }]}
+        edges={["top", "bottom"]}
+      >
+        <View style={s.center}>
+          <ActivityIndicator color={palette.accent} size="large" />
+          <Text style={[s.subText, { color: palette.textSecondary, marginTop: 10 }]}>
+            Loading…
           </Text>
         </View>
       </SafeAreaView>
@@ -69,70 +92,113 @@ export default function StoreScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <TopBar title="SLRH Store" showBack={false} />
-        <View style={styles.center}>
-          <Text style={{ color: "#ff6666", fontWeight: "600" }}>{error}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!products.length) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <TopBar title="SLRH Store" showBack={false} />
-        <View style={styles.center}>
-          <Text style={{ color: "#fff" }}>No products available</Text>
+      <SafeAreaView
+        style={[s.safe, { backgroundColor: palette.background }]}
+        edges={["top", "bottom"]}
+      >
+        <View style={s.center}>
+          <Text style={[s.errorText, { color: "#ff6666" }]}>{error}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <TopBar title="SLRH Store" showBack={false} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Available Products</Text>
-        <View style={styles.grid}>
-          {products.map((p) => (
-            <Pressable
-              key={p._id}
-              style={styles.card}
-              onPress={() => router.push(`/store/${p._id}`)}
-            >
-              <Image
-                source={{
-                  uri:
-                    p.image ||
-                    "https://via.placeholder.com/400x400?text=SLRH",
-                }}
-                style={styles.image}
-              />
-              <Text style={styles.title}>{p.title}</Text>
-              <Text style={styles.price}>Rs. {p.price.toLocaleString()}</Text>
-              <Text style={styles.stock}>
-                {p.quantity > 0 ? "🟢 In stock" : "🔴 Out of stock"}
+    <SafeAreaView
+      style={[s.safe, { backgroundColor: palette.background }]}
+      edges={["top", "bottom"]}
+    >
+        <ScrollView contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
+          {/* Tabs */}
+          <SegmentedBar tabs={TABS} value={tab} onChange={setTab} style={{ paddingHorizontal: 0 }} />
+
+          {/* Section Title */}
+          <Text style={[s.header, { color: palette.text }]}>
+            {tab === "Products" ? "Available Products" : "Event Tickets"}
+          </Text>
+
+          {/* Empty per tab */}
+          {current.length === 0 ? (
+            <View style={[s.center, { paddingVertical: 40 }]}>
+              <Text style={[s.subText, { color: palette.textSecondary }]}>
+                {tab === "Products" ? "No products available" : "No tickets available"}
               </Text>
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+            </View>
+          ) : (
+            <View style={s.grid}>
+              {current.map((p) => (
+                <Pressable
+                  key={p._id}
+                  style={[
+                    s.card,
+                    { backgroundColor: palette.card, borderColor: palette.border },
+                  ]}
+                  onPress={() => router.push(`/store/${p._id}`)}
+                >
+                  <Image
+                    source={{
+                      uri: p.image || "https://via.placeholder.com/400x400?text=SLRH",
+                    }}
+                    style={s.image}
+                  />
+
+                  {/* Ticket badge */}
+                  {tab === "Tickets" && (
+                    <View style={[s.badge, { backgroundColor: palette.accent + "22", borderColor: palette.accent }]}>
+                      <Text style={[s.badgeText, { color: palette.accent }]}>TICKET</Text>
+                    </View>
+                  )}
+
+                  <Text style={[s.title, { color: palette.text }]} numberOfLines={2}>
+                    {p.title}
+                  </Text>
+
+                  {/* Optional event info if present */}
+                  {tab === "Tickets" && (p.eventName || p.eventDate || p.venue) ? (
+                    <Text style={[s.meta, { color: palette.textSecondary }]} numberOfLines={2}>
+                      {p.eventName ? `${p.eventName} • ` : ""}
+                      {p.eventDate ? new Date(p.eventDate).toLocaleDateString() : ""}
+                      {p.venue ? ` • ${p.venue}` : ""}
+                    </Text>
+                  ) : null}
+
+                  <Text style={[s.price, { color: palette.accent }]}>
+                    Rs. {p.price.toLocaleString()}
+                  </Text>
+
+                  <Text
+                    style={[
+                      s.stock,
+                      { color: p.quantity > 0 ? palette.textSecondary : "#ff7777" },
+                    ]}
+                  >
+                    {p.quantity > 0 ? "🟢 In stock" : "🔴 Out of stock"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          
+        </ScrollView>
+      <BottomCartBar />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0b0b0b" },
+/* ---------- Styles ---------- */
+const s = StyleSheet.create({
+  safe: { flex: 1, marginTop:-50},
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+
   container: { padding: 16 },
   header: {
-    color: "#fff",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "900",
-    marginBottom: 10,
+    marginTop: 8,
+    marginBottom: 12,
     textAlign: "center",
   },
+
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -141,12 +207,11 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "47%",
-    backgroundColor: "#111",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#1f1f1f",
     marginBottom: 12,
     overflow: "hidden",
+    position: "relative",
   },
   image: {
     width: "100%",
@@ -154,18 +219,21 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
-  title: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-    marginTop: 6,
-    paddingHorizontal: 6,
+  badge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  price: {
-    color: "#00E0C6",
-    fontWeight: "900",
-    marginTop: 2,
-    paddingHorizontal: 6,
-  },
-  stock: { color: "#9ca3af", fontSize: 12, padding: 6, marginBottom: 4 },
+  badgeText: { fontSize: 10, fontWeight: "900" },
+
+  title: { fontSize: 15, fontWeight: "700", marginTop: 6, paddingHorizontal: 6 },
+  meta: { fontSize: 12, marginTop: 2, paddingHorizontal: 6 },
+  price: { fontWeight: "900", marginTop: 6, paddingHorizontal: 6 },
+  stock: { fontSize: 12, padding: 6, marginBottom: 4 },
+  subText: { fontSize: 14, fontWeight: "600" },
+  errorText: { fontSize: 14, fontWeight: "700" },
 });

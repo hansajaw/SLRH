@@ -25,6 +25,7 @@ import {
 } from "../../data/media";
 import { useLocalSearchParams } from "expo-router";
 import YoutubePlayer from "react-native-youtube-iframe";
+import { useTheme } from "../../../context/ThemeContext"; // 👈 Theme
 
 const TABS = ["Videos", "Images", "News"] as const;
 type TabKey = (typeof TABS)[number];
@@ -33,6 +34,7 @@ const { width: W } = Dimensions.get("window");
 const toImg = (x?: any) => (typeof x === "string" ? { uri: x } : x);
 
 export default function MediaScreen() {
+  const { palette } = useTheme();
   const { tab: tabParam, id: newsId } = useLocalSearchParams<{
     tab?: string;
     id?: string;
@@ -59,16 +61,12 @@ export default function MediaScreen() {
   const [selectedImage, setSelectedImage] = useState<MediaImage | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
-  /* Load all media data */
+  // Load media data
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        const [v, a, n] = await Promise.all([
-          getVideos(),
-          getAlbums(),
-          getNews(),
-        ]);
+        const [v, a, n] = await Promise.all([getVideos(), getAlbums(), getNews()]);
         setVideos(v);
         setAlbums(a);
         setNews(n);
@@ -80,7 +78,7 @@ export default function MediaScreen() {
     })();
   }, []);
 
-  /* Animate tab changes */
+  // Animate fade transition between tabs
   useEffect(() => {
     Animated.sequence([
       Animated.timing(fade, { toValue: 0, duration: 120, useNativeDriver: true }),
@@ -88,7 +86,7 @@ export default function MediaScreen() {
     ]).start();
   }, [tab]);
 
-  /* Handle direct news navigation (from Home) */
+  // Direct news deep-link
   useEffect(() => {
     if (newsId && news.length > 0) {
       const found = news.find((n) => n._id === newsId);
@@ -99,7 +97,7 @@ export default function MediaScreen() {
     }
   }, [newsId, news]);
 
-  /* Open Album */
+  // Open Album and fetch images
   async function openAlbum(a: Album) {
     setSelectedAlbum(a);
     try {
@@ -112,21 +110,22 @@ export default function MediaScreen() {
 
   const Empty = ({ text }: { text: string }) => (
     <View style={s.emptyWrap}>
-      <Text style={s.emptyText}>{text}</Text>
+      <Text style={[s.emptyText, { color: palette.textSecondary }]}>{text}</Text>
     </View>
   );
 
   return (
-    <SafeScreen bg="#0b0b0b">
+    <SafeScreen bg={palette.background}>
       <View style={s.header}>
-        <Text style={s.pageTitle}>Media</Text>
+        <Text style={[s.pageTitle, { color: palette.text }]}>Media</Text>
       </View>
+
       <SegmentedBar tabs={TABS} value={tab} onChange={setTab} />
 
       <Animated.View style={{ flex: 1, opacity: fade }}>
         {loading ? (
           <View style={s.loader}>
-            <ActivityIndicator color="#00E0C6" size="large" />
+            <ActivityIndicator color={palette.accent} size="large" />
           </View>
         ) : (
           <>
@@ -163,7 +162,10 @@ export default function MediaScreen() {
                   ListEmptyComponent={<Empty text="No videos yet" />}
                   renderItem={({ item }) => (
                     <Pressable
-                      style={s.card}
+                      style={[
+                        s.card,
+                        { backgroundColor: palette.card, borderColor: palette.border },
+                      ]}
                       onPress={() => setSelectedVideo(item)}
                     >
                       {item.thumbnail ? (
@@ -172,11 +174,14 @@ export default function MediaScreen() {
                         <View style={[s.thumb, s.imagePh]} />
                       )}
                       <View style={s.caption}>
-                        <Text style={s.title} numberOfLines={2}>
+                        <Text style={[s.title, { color: palette.text }]}>
                           {item.title}
                         </Text>
                         {!!item.caption && (
-                          <Text style={s.meta} numberOfLines={2}>
+                          <Text
+                            style={[s.meta, { color: palette.textSecondary }]}
+                            numberOfLines={2}
+                          >
                             {item.caption}
                           </Text>
                         )}
@@ -200,15 +205,14 @@ export default function MediaScreen() {
                     ListEmptyComponent={<Empty text="No albums yet" />}
                     renderItem={({ item }) => (
                       <Pressable
-                        key={item._id}
-                        style={s.albumCard}
+                        style={[
+                          s.albumCard,
+                          { backgroundColor: palette.card },
+                        ]}
                         onPress={() => openAlbum(item)}
                       >
                         {item.cover ? (
-                          <Image
-                            source={toImg(item.cover)}
-                            style={s.albumCover}
-                          />
+                          <Image source={toImg(item.cover)} style={s.albumCover} />
                         ) : (
                           <View style={[s.albumCover, s.imagePh]} />
                         )}
@@ -221,22 +225,26 @@ export default function MediaScreen() {
                 ) : (
                   <>
                     {/* Back Toolbar */}
-                    <View style={s.albumToolbar}>
+                    <View
+                      style={[
+                        s.albumToolbar,
+                        { backgroundColor: palette.background, borderColor: palette.border },
+                      ]}
+                    >
                       <Pressable
-                        style={({ pressed }) => [
+                        style={[
                           s.backButton,
-                          pressed && {
-                            transform: [{ scale: 0.96 }],
-                            opacity: 0.8,
-                          },
+                          { borderColor: palette.accent, backgroundColor: palette.accent + "22" },
                         ]}
                         onPress={() => setSelectedAlbum(null)}
                       >
-                        <Text style={s.backArrow}>⟵</Text>
-                        <Text style={s.backLabel}>Back to Albums</Text>
+                        <Text style={[s.backArrow, { color: palette.accent }]}>⟵</Text>
+                        <Text style={[s.backLabel, { color: palette.text }]}>
+                          Back to Albums
+                        </Text>
                       </Pressable>
                       <View style={s.albumTitleWrap}>
-                        <Text style={s.albumToolbarTitle}>
+                        <Text style={[s.albumToolbarTitle, { color: palette.text }]}>
                           {selectedAlbum.title}
                         </Text>
                       </View>
@@ -286,7 +294,7 @@ export default function MediaScreen() {
                           style={s.modalImg}
                         />
                         {!!selectedImage.caption && (
-                          <Text style={s.modalCap}>
+                          <Text style={[s.modalCap, { color: palette.text }]}>
                             {selectedImage.caption}
                           </Text>
                         )}
@@ -308,22 +316,26 @@ export default function MediaScreen() {
                     ListEmptyComponent={<Empty text="No news available" />}
                     renderItem={({ item }) => (
                       <Pressable
-                        key={item._id}
-                        style={s.newsCard}
+                        style={[
+                          s.newsCard,
+                          { backgroundColor: palette.card, borderColor: palette.border },
+                        ]}
                         onPress={() => setSelectedNews(item)}
                       >
                         {item.banner ? (
-                          <Image
-                            source={toImg(item.banner)}
-                            style={s.newsImg}
-                          />
+                          <Image source={toImg(item.banner)} style={s.newsImg} />
                         ) : (
                           <View style={[s.newsImg, s.imagePh]} />
                         )}
                         <View style={s.newsText}>
-                          <Text style={s.title}>{item.title}</Text>
+                          <Text style={[s.title, { color: palette.text }]}>
+                            {item.title}
+                          </Text>
                           {!!item.excerpt && (
-                            <Text numberOfLines={2} style={s.meta}>
+                            <Text
+                              numberOfLines={2}
+                              style={[s.meta, { color: palette.textSecondary }]}
+                            >
                               {item.excerpt}
                             </Text>
                           )}
@@ -338,28 +350,29 @@ export default function MediaScreen() {
                     contentContainerStyle={s.scrollPad}
                     ListHeaderComponent={
                       <Pressable
-                        style={({ pressed }) => [
+                        style={[
                           s.backButtonNews,
-                          pressed && { opacity: 0.7 },
+                          { borderColor: palette.accent, backgroundColor: palette.accent + "22" },
                         ]}
                         onPress={() => setSelectedNews(null)}
                       >
-                        <Text style={s.backArrow}>⟵</Text>
-                        <Text style={s.backLabel}>Back to News</Text>
+                        <Text style={[s.backArrow, { color: palette.accent }]}>⟵</Text>
+                        <Text style={[s.backLabel, { color: palette.text }]}>
+                          Back to News
+                        </Text>
                       </Pressable>
                     }
                     renderItem={({ item }) => (
                       <View>
                         {item.banner ? (
-                          <Image
-                            source={toImg(item.banner)}
-                            style={s.newsHero}
-                          />
+                          <Image source={toImg(item.banner)} style={s.newsHero} />
                         ) : (
                           <View style={[s.newsHero, s.imagePh]} />
                         )}
-                        <Text style={s.newsTitle}>{item.title}</Text>
-                        <Text style={s.newsBody}>
+                        <Text style={[s.newsTitle, { color: palette.text }]}>
+                          {item.title}
+                        </Text>
+                        <Text style={[s.newsBody, { color: palette.textSecondary }]}>
                           {item.body ||
                             item.excerpt ||
                             "Full article coming soon..."}
@@ -377,123 +390,51 @@ export default function MediaScreen() {
   );
 }
 
+/* -------------------- Styles -------------------- */
 const s = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
-  pageTitle: { color: "#EFFFFB", fontSize: 22, fontWeight: "900" },
+  pageTitle: { fontSize: 22, fontWeight: "900" },
   scrollPad: { padding: 12, paddingBottom: 80 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyWrap: { flex: 1, alignItems: "center", paddingTop: 80 },
-  emptyText: { color: "#8ecac1", fontSize: 16, fontWeight: "600" },
+  emptyText: { fontSize: 16, fontWeight: "600" },
 
   /* Video Cards */
-  card: {
-    flexDirection: "row",
-    marginVertical: 8,
-    backgroundColor: "#101522",
-    borderRadius: 12,
-    overflow: "hidden",
-  },
+  card: { flexDirection: "row", marginVertical: 8, borderWidth: 1, borderRadius: 12 },
   thumb: { width: 120, height: 80 },
   caption: { flex: 1, padding: 10 },
-  title: { color: "#fff", fontWeight: "800" },
-  meta: { color: "#9aa" },
+  title: { fontWeight: "800" },
+  meta: { fontSize: 13 },
 
   /* Albums */
-  albumCard: {
-    width: "47%",
-    aspectRatio: 1.2,
-    marginHorizontal: "1.5%",
-    marginBottom: 14,
-    borderRadius: 16,
-    overflow: "hidden",
-    backgroundColor: "#101522",
-    elevation: 3,
-  },
+  albumCard: { width: "47%", aspectRatio: 1.2, marginHorizontal: "1.5%", marginBottom: 14, borderRadius: 16, overflow: "hidden", elevation: 3 },
   albumCover: { width: "100%", height: "100%", resizeMode: "cover" },
-  albumOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "flex-end",
-    padding: 10,
-  },
-  albumName: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 15,
-    textShadowColor: "rgba(0,0,0,0.6)",
-    textShadowRadius: 6,
-  },
+  albumOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "flex-end", padding: 10 },
+  albumName: { color: "#fff", fontWeight: "800", fontSize: 15, textShadowColor: "rgba(0,0,0,0.6)", textShadowRadius: 6 },
 
-  albumToolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#0e0e0e",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1a1a1a",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 224, 198, 0.1)",
-    borderWidth: 1,
-    borderColor: "#00E0C6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  backArrow: { color: "#00E0C6", fontSize: 18, marginRight: 6 },
-  backLabel: { color: "#fff", fontWeight: "700" },
+  albumToolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, paddingHorizontal: 14, paddingVertical: 10 },
+  backButton: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  backArrow: { fontSize: 18, marginRight: 6 },
+  backLabel: { fontWeight: "700" },
   albumTitleWrap: { flex: 1, alignItems: "center" },
-  albumToolbarTitle: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  albumToolbarTitle: { fontWeight: "900", fontSize: 16 },
 
   imgTile: { flex: 1 / 3, borderRadius: 10, overflow: "hidden" },
   img: { width: "100%", height: 120 },
-  photoShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.1)",
-  },
+  photoShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.1)" },
 
-  modalBg: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.95)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
   modalInner: { width: "100%", alignItems: "center" },
-  modalImg: {
-    width: "90%",
-    height: "70%",
-    resizeMode: "contain",
-    borderRadius: 10,
-  },
-  modalCap: { color: "#cfe", marginTop: 10, textAlign: "center" },
+  modalImg: { width: "90%", height: "70%", resizeMode: "contain", borderRadius: 10 },
+  modalCap: { marginTop: 10, textAlign: "center" },
 
-  backButtonNews: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 224, 198, 0.1)",
-    borderWidth: 1,
-    borderColor: "#00E0C6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-    marginBottom: 10,
-  },
+  backButtonNews: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, alignSelf: "flex-start", marginBottom: 10 },
 
-  newsCard: {
-    marginBottom: 12,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#101522",
-  },
+  newsCard: { marginBottom: 12, borderRadius: 12, overflow: "hidden", borderWidth: 1 },
   newsImg: { width: "100%", height: 150 },
   newsText: { padding: 10 },
   newsHero: { width: "100%", height: 220, borderRadius: 10, marginBottom: 12 },
   imagePh: { backgroundColor: "#222", borderWidth: 1, borderColor: "#2f2f2f" },
-  newsTitle: { color: "#fff", fontWeight: "900", fontSize: 18, marginBottom: 6 },
-  newsBody: { color: "#cfe", lineHeight: 22 },
+  newsTitle: { fontWeight: "900", fontSize: 18, marginBottom: 6 },
+  newsBody: { lineHeight: 22 },
 });

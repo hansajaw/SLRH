@@ -1,14 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable, ScrollView, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  ScrollView,
+  Alert,
+} from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import TopBar from "../../components/TopBar";
 import { useCart } from "../../context/CartContext";
+import { useTheme } from "../../context/ThemeContext"; // 🎨 Theme support
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3001";
 const asSrc = (img: any) => (typeof img === "string" ? { uri: img } : img);
 
+/* ---------- Star Rating ---------- */
 function Stars({ rating = 4.2 }: { rating?: number }) {
   const full = Math.floor(rating);
   const half = rating - full >= 0.5;
@@ -25,6 +35,7 @@ function Stars({ rating = 4.2 }: { rating?: number }) {
   );
 }
 
+/* ---------- Cart Item Card ---------- */
 function CartItemCard({
   id,
   title,
@@ -48,57 +59,104 @@ function CartItemCard({
   onPlus: () => void;
   onRemove: () => void;
 }) {
+  const { palette } = useTheme();
   const maxed = typeof stock === "number" && quantity >= stock;
   return (
-    <View style={st.card}>
+    <View
+      style={[
+        st.card,
+        { backgroundColor: palette.card, borderColor: palette.border },
+      ]}
+    >
       <Image source={asSrc(image)} style={st.cardImg} />
       <View style={{ flex: 1 }}>
-        <Text style={st.cardTitle} numberOfLines={1}>{title}</Text>
-        <Text style={st.cardSub} numberOfLines={2}>Fresh, guaranteed quality!</Text>
+        <Text style={[st.cardTitle, { color: palette.text }]} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text
+          style={[st.cardSub, { color: palette.textSecondary }]}
+          numberOfLines={2}
+        >
+          Fresh, guaranteed quality!
+        </Text>
+
         <View style={st.metaRow}>
-          <View style={st.pill}>
-            <Ionicons name="bicycle" size={12} color="#22C55E" />
-            <Text style={st.pillText}>Delivered</Text>
+          <View
+            style={[
+              st.pill,
+              {
+                backgroundColor: "rgba(34,197,94,0.15)",
+                borderColor: "rgba(34,197,94,0.35)",
+              },
+            ]}
+          >
+            <Ionicons name="bicycle" size={12} color={palette.success} />
+            <Text style={[st.pillText, { color: palette.success }]}>
+              Delivered
+            </Text>
           </View>
           <Stars rating={rating ?? 4.3} />
         </View>
+
         <View style={st.priceRow}>
-          <Text style={st.price}>Rs. {price.toLocaleString()}</Text>
-          <View style={st.stepper}>
+          <Text style={[st.price, { color: palette.text }]}>
+            Rs. {price.toLocaleString()}
+          </Text>
+          <View style={[st.stepper, { backgroundColor: palette.input }]}>
             <Pressable onPress={onMinus} style={st.stepBtn} hitSlop={6}>
-              <Ionicons name="remove" size={14} color="#0a0a0a" />
+              <Ionicons name="remove" size={14} color={palette.background} />
             </Pressable>
-            <Text style={st.stepQty}>{quantity}</Text>
+            <Text
+              style={[st.stepQty, { color: palette.background }]}
+            >
+              {quantity}
+            </Text>
             <Pressable
               onPress={onPlus}
-              style={[st.stepBtn, { backgroundColor: maxed ? "#E5E7EB" : "#D1FAE5" }]}
+              style={[
+                st.stepBtn,
+                { backgroundColor: maxed ? "#E5E7EB" : "#D1FAE5" },
+              ]}
               hitSlop={6}
               disabled={maxed}
             >
-              <Ionicons name="add" size={14} color={maxed ? "#9ca3af" : "#059669"} />
+              <Ionicons
+                name="add"
+                size={14}
+                color={maxed ? "#9ca3af" : "#059669"}
+              />
             </Pressable>
           </View>
         </View>
+
         {typeof stock === "number" && (
-          <Text style={{ color: "#9ca3af", marginTop: 6 }}>
+          <Text style={{ color: palette.textSecondary, marginTop: 6 }}>
             Stock: {stock} {maxed ? "(max reached)" : ""}
           </Text>
         )}
       </View>
-      <Pressable onPress={onRemove} hitSlop={8} style={st.removeBtn} accessibilityLabel="Remove item">
+      <Pressable
+        onPress={onRemove}
+        hitSlop={8}
+        style={st.removeBtn}
+        accessibilityLabel="Remove item"
+      >
         <Ionicons name="trash-outline" size={20} color="#ef4444" />
       </Pressable>
     </View>
   );
 }
 
+/* ---------- Main Cart Screen ---------- */
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const cart = useCart() as any;
+  const { palette } = useTheme();
 
+  const cart = useCart() as any;
   const { items, removeFromCart, total } = cart;
-  const updateQuantity: ((id: any, qty: number) => void) | undefined = cart?.updateQuantity;
+  const updateQuantity: ((id: any, qty: number) => void) | undefined =
+    cart?.updateQuantity;
 
   const [stocks, setStocks] = useState<Record<string, number>>({});
 
@@ -118,8 +176,7 @@ export default function CartScreen() {
           for (const [id, q] of entries) m[id] = q;
           setStocks(m);
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     })();
     return () => {
       cancelled = true;
@@ -153,19 +210,14 @@ export default function CartScreen() {
     const item = items.find((i: any) => i.id === id);
     if (!item) return;
     removeFromCart(id);
-    cart.addToCart?.({ ...item, quantity: next }); 
+    cart.addToCart?.({ ...item, quantity: next });
   };
 
   return (
-    <SafeAreaView style={[st.safe, { paddingBottom: insets.bottom }]}>
-      <TopBar
-        title="Cart"
-        showBack
-        showMenu={false}
-        showSearch={false}
-        showProfile={false}
-        onBackPress={() => router.back()}
-      />
+    <SafeAreaView
+      style={[st.safe, { backgroundColor: palette.background, paddingBottom: insets.bottom }]}
+    >
+
 
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
@@ -173,11 +225,20 @@ export default function CartScreen() {
       >
         {items.length === 0 ? (
           <View style={st.emptyWrap}>
-            <Ionicons name="cart-outline" size={40} color="#6b7280" />
-            <Text style={st.emptyTitle}>Your cart is empty</Text>
-            <Text style={st.emptySub}>Browse the store and add some goodies.</Text>
-            <Pressable style={st.exploreBtn} onPress={() => router.replace("/store" as any)}>
-              <Text style={st.exploreText}>Explore Store</Text>
+            <Ionicons name="cart-outline" size={40} color={palette.textSecondary} />
+            <Text style={[st.emptyTitle, { color: palette.text }]}>
+              Your cart is empty
+            </Text>
+            <Text style={[st.emptySub, { color: palette.textSecondary }]}>
+              Browse the store and add some goodies.
+            </Text>
+            <Pressable
+              style={[st.exploreBtn, { backgroundColor: palette.accent }]}
+              onPress={() => router.replace("/store" as any)}
+            >
+              <Text style={[st.exploreText, { color: palette.background }]}>
+                Explore Store
+              </Text>
             </Pressable>
           </View>
         ) : (
@@ -197,17 +258,26 @@ export default function CartScreen() {
                 onRemove={() =>
                   Alert.alert("Remove item", "Do you want to remove this from cart?", [
                     { text: "Cancel", style: "cancel" },
-                    { text: "Remove", style: "destructive", onPress: () => removeFromCart(it.id) },
+                    {
+                      text: "Remove",
+                      style: "destructive",
+                      onPress: () => removeFromCart(it.id),
+                    },
                   ])
                 }
               />
             ))}
 
-            <View style={st.summary}>
+            <View
+              style={[
+                st.summary,
+                { backgroundColor: palette.card, borderColor: palette.border },
+              ]}
+            >
               <Row label="Subtotal" value={`Rs. ${subTotal.toLocaleString()}`} />
               <Row label="Delivery Fee" value={`Rs. ${deliveryFee.toLocaleString()}`} />
               <Row label={`Discount (${discountPct}%)`} value={`- Rs. ${discount.toLocaleString()}`} />
-              <View style={st.dotted} />
+              <View style={[st.dotted, { borderColor: palette.border }]} />
               <Row label="Total" value={`Rs. ${grandTotal.toLocaleString()}`} bold />
             </View>
           </>
@@ -215,18 +285,31 @@ export default function CartScreen() {
       </ScrollView>
 
       {items.length > 0 && (
-        <View style={[st.buyBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
+        <View
+          style={[
+            st.buyBar,
+            {
+              backgroundColor: palette.card,
+              borderTopColor: palette.border,
+              paddingBottom: Math.max(12, insets.bottom),
+            },
+          ]}
+        >
           <View>
-            <Text style={st.totalLabel}>Total</Text>
-            <Text style={st.totalValue}>Rs. {grandTotal.toLocaleString()}</Text>
+            <Text style={[st.totalLabel, { color: palette.textSecondary }]}>
+              Total
+            </Text>
+            <Text style={[st.totalValue, { color: palette.text }]}>
+              Rs. {grandTotal.toLocaleString()}
+            </Text>
           </View>
           <Pressable
-            style={st.buyBtn}
+            style={[st.buyBtn, { backgroundColor: palette.accent }]}
             onPress={() => router.push("/checkout" as any)}
             accessibilityRole="button"
           >
-            <Ionicons name="bag-check" size={18} color="#0b0b0b" />
-            <Text style={st.buyText}>Buy Now</Text>
+            <Ionicons name="bag-check" size={18} color={palette.background} />
+            <Text style={[st.buyText, { color: palette.background }]}>Buy Now</Text>
           </Pressable>
         </View>
       )}
@@ -234,50 +317,67 @@ export default function CartScreen() {
   );
 }
 
+/* ---------- Small Row Component ---------- */
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  const { palette } = useTheme();
   return (
     <View style={st.row}>
-      <Text style={[st.rowLabel, bold && { fontWeight: "900", color: "#fff" }]}>{label}</Text>
-      <Text style={[st.rowValue, bold && { fontWeight: "900", color: "#fff" }]}>{value}</Text>
+      <Text
+        style={[
+          st.rowLabel,
+          { color: bold ? palette.text : palette.textSecondary, fontWeight: bold ? "900" : "700" },
+        ]}
+      >
+        {label}
+      </Text>
+      <Text
+        style={[
+          st.rowValue,
+          { color: bold ? palette.text : palette.textSecondary, fontWeight: bold ? "900" : "800" },
+        ]}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
 
+/* ---------- Styles ---------- */
 const st = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0b0b0b" },
+  safe: { flex: 1 },
   card: {
     flexDirection: "row",
     gap: 12,
     padding: 12,
     borderRadius: 18,
-    backgroundColor: "#0f1420",
     borderWidth: 1,
-    borderColor: "#1b2430",
     marginBottom: 12,
   },
-  cardImg: { width: 96, height: 96, borderRadius: 14, backgroundColor: "#1a2030" },
-  cardTitle: { color: "#E6FFF9", fontWeight: "900", fontSize: 15 },
-  cardSub: { color: "#93a3af", marginTop: 2, fontSize: 12 },
+  cardImg: { width: 96, height: 96, borderRadius: 14 },
+  cardTitle: { fontWeight: "900", fontSize: 15 },
+  cardSub: { marginTop: 2, fontSize: 12 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   pill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(34,197,94,0.15)",
-    borderColor: "rgba(34,197,94,0.35)",
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  pillText: { color: "#22C55E", fontWeight: "800", fontSize: 11 },
-  starText: { color: "#e5e7eb", fontSize: 11, marginLeft: 2 },
-  priceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 },
-  price: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  pillText: { fontWeight: "800", fontSize: 11 },
+  starText: { fontSize: 11, marginLeft: 2 },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  price: { fontWeight: "900", fontSize: 16 },
   stepper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E5E7EB",
     borderRadius: 999,
     paddingHorizontal: 6,
     paddingVertical: 4,
@@ -287,52 +387,29 @@ const st = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
-  stepQty: { minWidth: 18, textAlign: "center", fontWeight: "900", color: "#0a0a0a" },
+  stepQty: { minWidth: 18, textAlign: "center", fontWeight: "900" },
   removeBtn: { padding: 6, alignSelf: "flex-start" },
 
   emptyWrap: { alignItems: "center", paddingTop: 48 },
-  emptyTitle: { color: "#e5e7eb", fontWeight: "900", fontSize: 18, marginTop: 10 },
-  emptySub: { color: "#9ca3af", marginTop: 4 },
-  exploreBtn: {
-    marginTop: 14,
-    backgroundColor: "#00E0C6",
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-  },
-  exploreText: { color: "#001814", fontWeight: "900" },
+  emptyTitle: { fontWeight: "900", fontSize: 18, marginTop: 10 },
+  emptySub: { marginTop: 4 },
+  exploreBtn: { marginTop: 14, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10 },
+  exploreText: { fontWeight: "900" },
 
-  summary: {
-    marginTop: 8,
-    padding: 14,
-    borderRadius: 18,
-    backgroundColor: "#0f1420",
-    borderWidth: 1,
-    borderColor: "#1b2430",
-  },
+  summary: { marginTop: 8, padding: 14, borderRadius: 18, borderWidth: 1 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginVertical: 6 },
-  rowLabel: { color: "#cbd5e1", fontWeight: "700" },
-  rowValue: { color: "#cbd5e1", fontWeight: "800" },
-  dotted: {
-    height: 1,
-    borderStyle: "dashed",
-    borderBottomWidth: 1,
-    borderColor: "#263043",
-    marginVertical: 6,
-  },
+  rowLabel: {},
+  rowValue: {},
+  dotted: { height: 1, borderStyle: "dashed", borderBottomWidth: 1, marginVertical: 6 },
 
   buyBar: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#0b0b0b",
-    borderTopColor: "#141a25",
-    borderTopWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
     flexDirection: "row",
@@ -340,16 +417,15 @@ const st = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
-  totalLabel: { color: "#9ca3af", fontWeight: "700", fontSize: 12 },
-  totalValue: { color: "#E6FFF9", fontWeight: "900", fontSize: 18, marginTop: 2 },
+  totalLabel: { fontSize: 12 },
+  totalValue: { fontWeight: "900", fontSize: 18, marginTop: 2 },
   buyBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    backgroundColor: "#00E0C6",
     borderRadius: 999,
   },
-  buyText: { color: "#001814", fontWeight: "900", fontSize: 16 },
+  buyText: { fontWeight: "900", fontSize: 16 },
 });

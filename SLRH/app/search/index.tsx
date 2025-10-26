@@ -1,3 +1,4 @@
+// app/search/index.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -7,58 +8,61 @@ import {
   Pressable,
   FlatList,
   Image,
-  Dimensions,
   Keyboard,
+  ImageSourcePropType,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
 
 import SegmentedBar from "../../components/SegmentedBar";
+import { useTheme } from "../../context/ThemeContext";
 import { getHomeData, type PlayerItem, type NewsItem } from "../data/home";
 import { getMediaData, type MediaVideo, type MediaImage } from "../data/media";
 
-/* -------------------- Constants -------------------- */
 const PAD = 14;
 const TABS = ["All", "People", "Media", "News"] as const;
 type TabKey = (typeof TABS)[number];
 
-const asSrc = (s?: any) => (typeof s === "string" ? { uri: s } : s);
+// safely handle images
+const asSrc = (s?: any): ImageSourcePropType => {
+  if (typeof s === "number") return s;
+  if (typeof s === "string") return { uri: s };
+  if (s && typeof s === "object") return s;
+  return {
+    uri: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NgYGBgAAAABQABDQottQAAAABJRU5ErkJggg==",
+  };
+};
 
 export default function SearchScreen() {
+  const { palette } = useTheme();
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
   const [tab, setTab] = useState<TabKey>("All");
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
 
-  /* ---------- Load static data ---------- */
   const { players, news: newsSeed } = useMemo(() => {
     const h = getHomeData();
     return { players: h.players ?? [], news: h.news ?? [] };
   }, []);
-
   const { videos, images } = useMemo(() => getMediaData(), []);
 
-  /* ---------- Debounce search input ---------- */
   useEffect(() => {
     const id = setTimeout(() => setDebounced(q.trim()), 220);
     return () => clearTimeout(id);
   }, [q]);
 
-  /* ---------- Autofocus ---------- */
   useEffect(() => {
-    const id = setTimeout(() => inputRef.current?.focus(), 80);
+    const id = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(id);
   }, []);
 
-  /* ---------- Filters ---------- */
+  // filters
   const people = useMemo(() => {
     if (!debounced) return players;
     const s = debounced.toLowerCase();
-    return players.filter((p) =>
-      (p.playerName || "").toLowerCase().includes(s)
-    );
+    return players.filter((p) => (p.playerName || "").toLowerCase().includes(s));
   }, [players, debounced]);
 
   const mediaVids = useMemo(() => {
@@ -83,7 +87,7 @@ export default function SearchScreen() {
     );
   }, [newsSeed, debounced]);
 
-  /* ---------- Combine all results ---------- */
+  // "All" combined
   const all = useMemo(() => {
     const items: Array<
       | { kind: "person"; item: PlayerItem }
@@ -98,34 +102,40 @@ export default function SearchScreen() {
     return items;
   }, [people, mediaVids, mediaImgs, news]);
 
-  /* -------------------- UI -------------------- */
-  return (
-    <SafeAreaView style={s.safe}>
-      <View style={[s.head, { paddingTop: Math.max(8, insets.top * 0.25) }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} style={s.iconBtn}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
+  const Separator = () => <View style={{ height: 10 }} />;
 
-        <View style={s.searchBox}>
-          <Ionicons name="search" size={18} color="#9AA0A6" style={{ marginHorizontal: 8 }} />
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={["top"]}>
+      {/* Search bar */}
+      <View
+        style={[
+          styles.head,
+          { paddingTop: Math.max(6, insets.top * 0.2), backgroundColor: palette.background },
+        ]}
+      >
+        <View
+          style={[
+            styles.searchBox,
+            { backgroundColor: palette.card, borderColor: palette.border },
+          ]}
+        >
+          <Ionicons name="search" size={18} color={palette.textSecondary} style={{ marginHorizontal: 10 }} />
           <TextInput
             ref={inputRef}
             value={q}
             onChangeText={setQ}
             placeholder="Search drivers, videos, news…"
-            placeholderTextColor="#80878c"
-            style={s.input}
+            placeholderTextColor={palette.textSecondary}
+            style={[styles.input, { color: palette.text }]}
             returnKeyType="search"
             onSubmitEditing={() => Keyboard.dismiss()}
           />
           {!!q && (
             <Pressable onPress={() => setQ("")} hitSlop={10} style={{ paddingHorizontal: 8 }}>
-              <Ionicons name="close-circle" size={18} color="#9AA0A6" />
+              <Ionicons name="close-circle" size={18} color={palette.textSecondary} />
             </Pressable>
           )}
         </View>
-
-        <View style={{ width: 36 }} />
       </View>
 
       <SegmentedBar
@@ -139,125 +149,134 @@ export default function SearchScreen() {
         <FlatList
           data={all}
           keyExtractor={(_, i) => `all-${i}`}
-          contentContainerStyle={{ padding: PAD, paddingBottom: 18 + insets.bottom, gap: 10 }}
+          contentContainerStyle={{ paddingHorizontal: PAD, paddingBottom: 20 + insets.bottom }}
+          ItemSeparatorComponent={Separator}
           renderItem={({ item }) => {
-            if (item.kind === "person") return <PersonRow p={item.item} />;
-            if (item.kind === "video") return <VideoRow v={item.item} />;
-            if (item.kind === "image") return <ImageRow img={item.item} />;
-            return <NewsRow n={item.item} />;
+            switch (item.kind) {
+              case "person":
+                return <UnifiedRow type="person" item={item.item} palette={palette} />;
+              case "video":
+                return <UnifiedRow type="video" item={item.item} palette={palette} />;
+              case "image":
+                return <UnifiedRow type="image" item={item.item} palette={palette} />;
+              case "news":
+                return <UnifiedRow type="news" item={item.item} palette={palette} />;
+            }
           }}
-          ListEmptyComponent={<Empty q={debounced} />}
+          ListEmptyComponent={<Empty q={debounced} palette={palette} />}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
       {tab === "People" && (
         <FlatList
           data={people}
-          keyExtractor={(it, i) => it._id || it.playerName || String(i)}
-          contentContainerStyle={{ padding: PAD, paddingBottom: 18 + insets.bottom, gap: 10 }}
-          renderItem={({ item }) => <PersonRow p={item} />}
-          ListEmptyComponent={<Empty q={debounced} />}
+          keyExtractor={(it, i) => String(it._id ?? it.playerName ?? i)}
+          contentContainerStyle={{ paddingHorizontal: PAD, paddingBottom: 20 + insets.bottom }}
+          ItemSeparatorComponent={Separator}
+          renderItem={({ item }) => <UnifiedRow type="person" item={item} palette={palette} />}
+          ListEmptyComponent={<Empty q={debounced} palette={palette} />}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
       {tab === "Media" && (
         <FlatList
-          data={[
-            ...mediaVids.map((m) => ({ kind: "v" as const, m })),
-            ...mediaImgs.map((m) => ({ kind: "i" as const, m })),
-          ]}
+          data={[...mediaVids.map((m) => ({ kind: "video" as const, item: m })), ...mediaImgs.map((m) => ({ kind: "image" as const, item: m }))]}
           keyExtractor={(_, i) => `m-${i}`}
-          contentContainerStyle={{ padding: PAD, paddingBottom: 18 + insets.bottom, gap: 10 }}
-          renderItem={({ item }) =>
-            item.kind === "v" ? <VideoRow v={item.m} /> : <ImageRow img={item.m} />
-          }
-          ListEmptyComponent={<Empty q={debounced} />}
+          contentContainerStyle={{ paddingHorizontal: PAD, paddingBottom: 20 + insets.bottom }}
+          ItemSeparatorComponent={Separator}
+          renderItem={({ item }) => <UnifiedRow type={item.kind} item={item.item} palette={palette} />}
+          ListEmptyComponent={<Empty q={debounced} palette={palette} />}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
       {tab === "News" && (
         <FlatList
           data={news}
-          keyExtractor={(it) => it._id}
-          contentContainerStyle={{ padding: PAD, paddingBottom: 18 + insets.bottom, gap: 10 }}
-          renderItem={({ item }) => <NewsRow n={item} />}
-          ListEmptyComponent={<Empty q={debounced} />}
+          keyExtractor={(it, i) => String(it._id ?? i)}
+          contentContainerStyle={{ paddingHorizontal: PAD, paddingBottom: 20 + insets.bottom }}
+          ItemSeparatorComponent={Separator}
+          renderItem={({ item }) => <UnifiedRow type="news" item={item} palette={palette} />}
+          ListEmptyComponent={<Empty q={debounced} palette={palette} />}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </SafeAreaView>
   );
 }
 
-/* -------------------- Row Components -------------------- */
+/* -------------------- Unified Row -------------------- */
+function UnifiedRow({
+  type,
+  item,
+  palette,
+}: {
+  type: "person" | "video" | "image" | "news";
+  item: any;
+  palette: any;
+}) {
+  const title =
+    type === "person"
+      ? item.playerName
+      : type === "video"
+      ? item.title
+      : type === "image"
+      ? item.caption ?? "Gallery"
+      : item.title;
 
-function PersonRow({ p }: { p: PlayerItem }) {
-  const name = p.playerName || "Driver";
-  const id = p._id || name.replace(/\s+/g, "-").toLowerCase();
-  return (
-    <Link href={{ pathname: "/people/driver/[id]", params: { id } }} asChild>
-      <Pressable style={s.rowCard}>
-        <Image source={asSrc(p.profilePicture)} style={s.avatar} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.rowTitle}>{name}</Text>
-          {!!p.playerDoc?.bestAchievement && (
-            <Text style={s.rowSub}>{p.playerDoc.bestAchievement}</Text>
-          )}
-        </View>
-        <Ionicons name="chevron-forward" size={18} color="#9AA0A6" />
-      </Pressable>
-    </Link>
+  const subtitle =
+    type === "person"
+      ? item.playerDoc?.bestAchievement
+      : type === "video"
+      ? ""
+      : type === "image"
+      ? "Gallery"
+      : item.category
+      ? `${new Date(item.publishedAt).toLocaleDateString()} • ${item.category}`
+      : new Date(item.publishedAt).toLocaleDateString();
+
+  const thumbnail =
+    type === "person" ? item.profilePicture : type === "news" ? item.banner : type === "video" ? item.thumbnail : item.src;
+
+  const rightIcon = type === "video" ? (
+    <View style={[styles.playPill, { backgroundColor: palette.accent }]}>
+      <Ionicons name="play" size={16} color={palette.background} />
+    </View>
+  ) : (
+    <Ionicons name="chevron-forward" size={18} color={palette.textSecondary} />
   );
-}
 
-function VideoRow({ v }: { v: MediaVideo }) {
   return (
-    <Pressable style={s.rowCard}>
-      <Image source={asSrc(v.thumbnail)} style={s.thumb} />
-      <View style={{ flex: 1 }}>
-        <Text style={s.rowTitle}>{v.title}</Text>
-        <Text style={s.rowSub}>{v.duration ? `${v.duration}` : ""}</Text>
-      </View>
-      <View style={s.playPill}>
-        <Text style={s.playTxt}>▶</Text>
-      </View>
-    </Pressable>
-  );
-}
+    <Pressable
+      style={[styles.unifiedCard, { backgroundColor: palette.card, borderColor: palette.border }]}
+    >
+      <Image source={asSrc(thumbnail)} style={styles.unifiedThumb} resizeMode="cover" />
 
-function ImageRow({ img }: { img: MediaImage }) {
-  return (
-    <Pressable style={s.rowCard}>
-      <Image source={asSrc(img.src)} style={s.thumb} />
-      <View style={{ flex: 1 }}>
-        <Text style={s.rowTitle}>{img.caption ?? "Image"}</Text>
-        <Text style={s.rowSub}>Gallery</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color="#9AA0A6" />
-    </Pressable>
-  );
-}
-
-function NewsRow({ n }: { n: NewsItem }) {
-  return (
-    <Pressable style={s.rowCard}>
-      <Image source={asSrc(n.banner)} style={s.thumb} />
-      <View style={{ flex: 1 }}>
-        <Text style={s.rowTitle}>{n.title}</Text>
-        <Text style={s.rowSub}>
-          {n.publishedAt ? new Date(n.publishedAt).toLocaleDateString() : ""}{" "}
-          {n.category ? `• ${n.category}` : ""}
+      <View style={styles.unifiedInfo}>
+        <Text style={[styles.unifiedTitle, { color: palette.text }]} numberOfLines={1}>
+          {title}
         </Text>
+        {subtitle ? (
+          <Text style={[styles.unifiedSubtitle, { color: palette.textSecondary }]} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#9AA0A6" />
+
+      {rightIcon}
     </Pressable>
   );
 }
 
-function Empty({ q }: { q: string }) {
+function Empty({ q, palette }: { q: string; palette: any }) {
   return (
-    <View style={s.emptyBox}>
-      <Text style={s.emptyTitle}>{q ? "No results" : "Start typing to search"}</Text>
-      <Text style={s.emptySub}>
+    <View style={styles.emptyBox}>
+      <Text style={[styles.emptyTitle, { color: palette.text }]}>
+        {q ? "No results" : "Start typing to search"}
+      </Text>
+      <Text style={[styles.emptySub, { color: palette.textSecondary }]}>
         {q ? "Try a different keyword" : "Find drivers, images, videos and news"}
       </Text>
     </View>
@@ -265,50 +284,52 @@ function Empty({ q }: { q: string }) {
 }
 
 /* -------------------- Styles -------------------- */
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0b0b0b" },
+const styles = StyleSheet.create({
+  safe: { paddingTop:-50 },
   head: {
     paddingHorizontal: PAD,
     paddingBottom: 8,
-    backgroundColor: "#0b0b0b",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  searchBox: {
-    flex: 1,
-    height: 40,
-    backgroundColor: "#121519",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#1b2230",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  input: { flex: 1, color: "#fff", paddingVertical: 8, fontWeight: "700" },
-  rowCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 10,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 14,
-  },
-  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#1c1c1c" },
-  thumb: { width: 80, height: 60, borderRadius: 10, backgroundColor: "#1c1c1c" },
-  rowTitle: { color: "#fff", fontWeight: "800" },
-  rowSub: { color: "#aeb4ba", marginTop: 2 },
-  playPill: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#7e5bef",
     alignItems: "center",
     justifyContent: "center",
   },
-  playTxt: { color: "#fff", fontWeight: "900" },
+  searchBox: {
+    width: "100%",
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  input: { flex: 1, paddingVertical: 8, fontWeight: "700" },
+
+  unifiedCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  unifiedThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    marginRight: 12,
+    backgroundColor: "#1c1c1c",
+  },
+  unifiedInfo: { flex: 1 },
+  unifiedTitle: { fontSize: 15, fontWeight: "900", marginBottom: 3 },
+  unifiedSubtitle: { fontSize: 13, fontWeight: "600" },
+
+  playPill: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   emptyBox: { alignItems: "center", paddingVertical: 36 },
-  emptyTitle: { color: "#fff", fontWeight: "900", fontSize: 16 },
-  emptySub: { color: "#aab0b8", marginTop: 6 },
+  emptyTitle: { fontWeight: "900", fontSize: 16 },
+  emptySub: { marginTop: 6 },
 });

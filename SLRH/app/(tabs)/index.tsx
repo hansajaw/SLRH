@@ -15,12 +15,12 @@ import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import SafeScreen from "../../components/SafeScreen";
 import TopBar from "../../components/TopBar";
+import { useTheme } from "../../context/ThemeContext";
 import { getUpcomingEvents, getResults, type Event } from "../data/events";
 import { getPeopleData } from "../data/people";
-import { getNews, type NewsItem } from "../data/media"; 
+import { getNews, type NewsItem } from "../data/media";
 
 const SP = 14;
-const BG = "#0b0b0b";
 const SCREEN_W = Dimensions.get("window").width;
 
 const asImageSource = (src?: string | ImageSourcePropType) => {
@@ -56,20 +56,30 @@ function HeroSlide({ event }: { event: Event }) {
   );
 }
 
-function NewsCard({ item }: { item: NewsItem }) {
-  const when = new Date(); 
+function NewsCard({ item, palette }: { item: NewsItem; palette: any }) {
+  const when = new Date();
   return (
     <Link href={{ pathname: "/media", params: { tab: "News", id: item._id } }} asChild>
-      <Pressable style={styles.newsCard}>
+      <Pressable
+        style={[
+          styles.newsCard,
+          { backgroundColor: palette.card, borderColor: palette.border },
+        ]}
+      >
         <View style={styles.newsImgWrap}>
           <Image source={asImageSource(item.banner)} style={styles.newsImg} />
           <View style={styles.newsOverlay} />
         </View>
         <View style={styles.newsContent}>
-          <Text style={styles.newsTitle} numberOfLines={2}>
+          <Text
+            style={[styles.newsTitle, { color: palette.text }]}
+            numberOfLines={2}
+          >
             {item.title}
           </Text>
-          <Text style={styles.newsMeta}>📅 {when?.toLocaleDateString()}</Text>
+          <Text style={[styles.newsMeta, { color: palette.textSecondary }]}>
+            📅 {when.toLocaleDateString()}
+          </Text>
         </View>
       </Pressable>
     </Link>
@@ -78,6 +88,8 @@ function NewsCard({ item }: { item: NewsItem }) {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { palette } = useTheme();
+
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -122,7 +134,7 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <SafeScreen bg={BG}>
+    <SafeScreen bg={palette.background}>
       <TopBar title="SLRH" />
       <ScrollView
         style={{ flex: 1 }}
@@ -131,10 +143,11 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={loading}
             onRefresh={loadNews}
-            tintColor="#00E0C6"
+            tintColor={palette.accent}
           />
         }
       >
+        {/* -------------------- HERO SECTION -------------------- */}
         <View style={{ marginBottom: 32 }}>
           <FlatList
             data={heroEvents}
@@ -148,11 +161,13 @@ export default function HomeScreen() {
           />
         </View>
 
+        {/* -------------------- FEATURED TEAMS -------------------- */}
         <Section
           title="Featured Teams"
           onPress={() =>
             router.push({ pathname: "/people", params: { tab: "Teams" } })
           }
+          palette={palette}
         >
           <FlatList
             data={featuredTeams}
@@ -168,7 +183,13 @@ export default function HomeScreen() {
                     params: { id: item.id },
                   })
                 }
-                style={styles.teamCard}
+                style={[
+                  styles.teamCard,
+                  {
+                    backgroundColor: palette.card,
+                    borderColor: palette.border,
+                  },
+                ]}
               >
                 <View style={styles.teamImgWrap}>
                   <Image
@@ -176,8 +197,12 @@ export default function HomeScreen() {
                     style={styles.teamImg}
                   />
                 </View>
-                <Text style={styles.teamName}>{item.name}</Text>
-                <View style={styles.memberBadge}>
+                <Text style={[styles.teamName, { color: palette.text }]}>
+                  {item.name}
+                </Text>
+                <View
+                  style={[styles.memberBadge, { backgroundColor: palette.accent }]}
+                >
                   <Text style={styles.memberBadgeText}>
                     {item.members.length} Members
                   </Text>
@@ -187,11 +212,13 @@ export default function HomeScreen() {
           />
         </Section>
 
+        {/* -------------------- TOP DRIVERS -------------------- */}
         <Section
           title="Top Players"
           onPress={() =>
             router.push({ pathname: "/people", params: { tab: "Drivers" } })
           }
+          palette={palette}
         >
           <FlatList
             data={topDrivers}
@@ -207,38 +234,46 @@ export default function HomeScreen() {
                     params: { id: item.id },
                   })
                 }
-                style={styles.playerCard}
+                style={[
+                  styles.playerCard,
+                  { backgroundColor: palette.card, borderColor: palette.border },
+                ]}
               >
                 <View style={styles.playerImgWrap}>
                   <Image
                     source={asImageSource(item.avatar)}
-                    style={styles.playerImg}
+                    style={[
+                      styles.playerImg,
+                      { borderColor: palette.accent },
+                    ]}
                   />
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>🏆</Text>
-                  </View>
                 </View>
-                <Text style={styles.playerName}>{item.name}</Text>
-                <Text style={styles.playerStats}>{item.stats}</Text>
+                <Text style={[styles.playerName, { color: palette.text }]}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.playerStats, { color: palette.accent }]}>
+                  {item.stats}
+                </Text>
               </Pressable>
             )}
           />
         </Section>
 
+        {/* -------------------- RESULTS -------------------- */}
         <Section
           title="Latest Results"
           onPress={() =>
             router.push({ pathname: "/racing", params: { tab: "results" } })
           }
+          palette={palette}
         >
           <FlatList
-            data={latestResults}
+            data={getResults().slice(0, 5)}
             keyExtractor={(it) => String(it.id)}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ columnGap: 12 }}
             renderItem={({ item }) => {
-              const top3 = item.podium?.slice(0, 3) || [];
               const date = new Date(item.occurredAt);
               return (
                 <Pressable
@@ -248,9 +283,9 @@ export default function HomeScreen() {
                       params: { id: String(item.id) },
                     })
                   }
-                  style={({ pressed }) => [
+                  style={[
                     styles.resultCard,
-                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                    { backgroundColor: palette.card, borderColor: palette.border },
                   ]}
                 >
                   <Image
@@ -258,26 +293,14 @@ export default function HomeScreen() {
                     style={styles.resultImg}
                   />
                   <View style={styles.resultTextWrap}>
-                    <Text style={styles.resultTitle}>{item.title}</Text>
-                    <Text style={styles.resultMeta}>
+                    <Text style={[styles.resultTitle, { color: palette.text }]}>
+                      {item.title}
+                    </Text>
+                    <Text
+                      style={[styles.resultMeta, { color: palette.textSecondary }]}
+                    >
                       📅 {date.toLocaleDateString()}
                     </Text>
-                    {top3.length > 0 && (
-                      <View style={styles.podiumWrap}>
-                        {top3.map((p, i) => (
-                          <View key={i} style={styles.podiumItem}>
-                            <Text style={styles.podiumIcon}>
-                              {p.place === 1
-                                ? "🥇"
-                                : p.place === 2
-                                ? "🥈"
-                                : "🥉"}
-                            </Text>
-                            <Text style={styles.podiumText}>{p.name}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
                   </View>
                 </Pressable>
               );
@@ -285,11 +308,13 @@ export default function HomeScreen() {
           />
         </Section>
 
+        {/* -------------------- NEWS -------------------- */}
         <Section
           title="Latest News"
           onPress={() =>
             router.push({ pathname: "/media", params: { tab: "News" } })
           }
+          palette={palette}
         >
           <FlatList
             data={news.slice(0, 5)}
@@ -297,7 +322,7 @@ export default function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ columnGap: 12 }}
-            renderItem={({ item }) => <NewsCard item={item} />}
+            renderItem={({ item }) => <NewsCard item={item} palette={palette} />}
           />
         </Section>
       </ScrollView>
@@ -305,24 +330,39 @@ export default function HomeScreen() {
   );
 }
 
+/* -------------------- Section Wrapper -------------------- */
 function Section({
   title,
   onPress,
   children,
+  palette,
 }: {
   title: string;
   onPress: () => void;
   children: React.ReactNode;
+  palette: any;
 }) {
   return (
     <View style={styles.sectionBox}>
       <View style={styles.sectionHead}>
         <View>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <View style={styles.sectionUnderline} />
+          <Text style={[styles.sectionTitle, { color: palette.text }]}>
+            {title}
+          </Text>
+          <View
+            style={[styles.sectionUnderline, { backgroundColor: palette.accent }]}
+          />
         </View>
-        <Pressable onPress={onPress} style={styles.viewAllBtn}>
-          <Text style={styles.viewAll}>View All</Text>
+        <Pressable
+          onPress={onPress}
+          style={[
+            styles.viewAllBtn,
+            { backgroundColor: palette.accent + "22" },
+          ]}
+        >
+          <Text style={[styles.viewAll, { color: palette.accent }]}>
+            View All
+          </Text>
         </Pressable>
       </View>
       {children}
@@ -330,6 +370,7 @@ function Section({
   );
 }
 
+/* -------------------- Styles -------------------- */
 const styles = StyleSheet.create({
   heroCard: {
     width: SCREEN_W * 0.85,
@@ -338,10 +379,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     elevation: 8,
-    shadowColor: "#00E0C6",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   heroImage: { width: "100%", height: "100%", resizeMode: "cover" },
   heroOverlay: { ...StyleSheet.absoluteFillObject },
@@ -354,7 +391,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginBottom: 8,
   },
-  liveBadgeText: { color: "#000", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
+  liveBadgeText: { color: "#000", fontSize: 10, fontWeight: "900" },
   heroTitle: { color: "#fff", fontSize: 22, fontWeight: "900", marginBottom: 4 },
   heroMeta: { color: "#ddd", fontSize: 13, marginBottom: 8 },
   heroCTABtn: {
@@ -375,30 +412,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  sectionTitle: { color: "#fff", fontSize: 22, fontWeight: "900", letterSpacing: -0.5 },
-  sectionUnderline: {
-    width: 40,
-    height: 3,
-    backgroundColor: "#00E0C6",
-    borderRadius: 2,
-    marginTop: 4,
-  },
+  sectionTitle: { fontSize: 22, fontWeight: "900" },
+  sectionUnderline: { width: 40, height: 3, borderRadius: 2, marginTop: 4 },
   viewAllBtn: {
-    backgroundColor: "rgba(0, 224, 198, 0.15)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
-  viewAll: { color: "#00E0C6", fontWeight: "700", fontSize: 13 },
+  viewAll: { fontWeight: "700", fontSize: 13 },
 
   teamCard: {
     alignItems: "center",
     width: 130,
-    backgroundColor: "#1a1a1a",
     padding: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222",
   },
   teamImgWrap: {
     width: 90,
@@ -408,97 +436,45 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
-    borderWidth: 2,
-    borderColor: "#333",
   },
   teamImg: { width: 70, height: 70, borderRadius: 8 },
-  teamName: { color: "#fff", fontWeight: "700", fontSize: 14, textAlign: "center" },
-  memberBadge: {
-    backgroundColor: "#00E0C6",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginTop: 6,
-  },
+  teamName: { fontWeight: "700", fontSize: 14, textAlign: "center" },
+  memberBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginTop: 6 },
   memberBadgeText: { color: "#000", fontSize: 11, fontWeight: "700" },
 
   playerCard: {
     alignItems: "center",
     width: 110,
-    backgroundColor: "#1a1a1a",
     padding: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222",
   },
-  playerImgWrap: { position: "relative", marginBottom: 8 },
-  playerImg: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: "#00E0C6",
-  },
-  rankBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#00E0C6",
-  },
-  rankText: { fontSize: 12 },
-  playerName: { color: "#fff", fontWeight: "700", fontSize: 13, textAlign: "center" },
-  playerStats: { color: "#00E0C6", fontSize: 11, marginTop: 4, fontWeight: "600" },
+  playerImgWrap: { marginBottom: 8 },
+  playerImg: { width: 80, height: 80, borderRadius: 40, borderWidth: 3 },
+  playerName: { fontWeight: "700", fontSize: 13, textAlign: "center" },
+  playerStats: { fontSize: 11, marginTop: 4, fontWeight: "600" },
 
   resultCard: {
     width: 260,
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#1a1a1a",
     borderWidth: 1,
-    borderColor: "#222",
   },
   resultImg: { width: "100%", height: 130, resizeMode: "cover" },
   resultTextWrap: { padding: 12 },
-  resultTitle: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  resultMeta: { color: "#999", fontSize: 12, marginTop: 4 },
-  podiumWrap: { marginTop: 10, gap: 6 },
-  podiumItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  podiumIcon: { fontSize: 16 },
-  podiumText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
-    flex: 1,
-  },
+  resultTitle: { fontWeight: "800", fontSize: 16 },
+  resultMeta: { fontSize: 12, marginTop: 4 },
 
   newsCard: {
     width: 260,
-    backgroundColor: "#1a1a1a",
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#222",
   },
   newsImgWrap: { position: "relative" },
   newsImg: { width: "100%", height: 140, resizeMode: "cover" },
-  newsOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.2)",
-  },
+  newsOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.2)" },
   newsContent: { padding: 12 },
-  newsTitle: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 6,
-  },
-  newsMeta: { color: "#999", fontSize: 12, fontWeight: "500" },
+  newsTitle: { fontWeight: "700", fontSize: 15, lineHeight: 20, marginBottom: 6 },
+  newsMeta: { fontSize: 12, fontWeight: "500" },
 });

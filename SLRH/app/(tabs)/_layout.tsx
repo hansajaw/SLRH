@@ -1,32 +1,33 @@
-// app/(tabs)/_layout.tsx
 import * as React from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../../context/ThemeContext"; // 👈 import theme context
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme(); // 👈 access the current color palette
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#00E0C6",
-        tabBarInactiveTintColor: "#9AA0A6",
+        tabBarActiveTintColor: palette.accent, // use accent color dynamically
+        tabBarInactiveTintColor: palette.textSecondary,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "600",
           marginBottom: 2,
         },
         tabBarStyle: {
-          backgroundColor: "#0b0b0b",
-          borderTopColor: "#1a1a1a",
+          backgroundColor: palette.background,
+          borderTopColor: palette.border,
           borderTopWidth: 1,
           height: Math.max(64, 56 + insets.bottom),
           paddingBottom: insets.bottom > 0 ? insets.bottom - 2 : 8,
           paddingTop: 8,
           elevation: 10,
-          shadowColor: "#000",
+          shadowColor: palette.border,
           shadowOpacity: 0.25,
           shadowOffset: { width: 0, height: -2 },
           shadowRadius: 8,

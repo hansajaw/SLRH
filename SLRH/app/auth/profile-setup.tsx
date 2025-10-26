@@ -17,10 +17,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import SafeScreen from "../../components/SafeScreen";
 import * as ImagePicker from "expo-image-picker";
 import { useUser } from "../../context/UserContext";
+import { useTheme } from "../../context/ThemeContext"; // 🎨 Add theme support
 
 export default function ProfileSetup() {
   const { email } = useLocalSearchParams<{ email?: string }>();
   const { updateProfile } = useUser();
+  const { palette } = useTheme(); // 🎨
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -46,7 +48,6 @@ export default function ProfileSetup() {
         selectionLimit: 1,
       });
       if (!res.canceled && res.assets?.length) {
-        console.log("Selected avatar:", res.assets[0].uri);
         setAvatarUri(res.assets[0].uri);
       }
     } catch (err) {
@@ -63,7 +64,6 @@ export default function ProfileSetup() {
 
     try {
       setLoading(true);
-      console.log("Updating profile:", { fullName, phone, addr1, addr2, city, zip, avatarUri });
       await updateProfile({
         fullName,
         phone,
@@ -74,7 +74,6 @@ export default function ProfileSetup() {
         avatarUri: avatarUri ?? undefined,
         caption: "Fueling your passion for speed. Buckle up!",
       });
-      console.log("Profile updated successfully");
       Alert.alert("✅ Success", "Your account has been created!", [
         { text: "OK", onPress: () => router.replace("/(tabs)") },
       ]);
@@ -87,15 +86,25 @@ export default function ProfileSetup() {
   }
 
   return (
-    <SafeScreen bg="#0b0b0b">
+    <SafeScreen bg={palette.background}>
       <LinearGradient
-        colors={["#0E2322", "#0b0b0b"]}
+        colors={[palette.accentAlt, palette.background]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={s.header}
       />
-      <Pressable onPress={() => router.back()} style={s.backBtn}>
-        <Ionicons name="chevron-back" size={22} color="#EFFFFB" />
+
+      <Pressable
+        onPress={() => router.back()}
+        style={[
+          s.backBtn,
+          {
+            backgroundColor: palette.card,
+            borderColor: palette.border,
+          },
+        ]}
+      >
+        <Ionicons name="chevron-back" size={22} color={palette.text} />
       </Pressable>
 
       <KeyboardAvoidingView
@@ -107,96 +116,172 @@ export default function ProfileSetup() {
           contentContainerStyle={{ paddingBottom: 80 }}
         >
           <View style={s.content}>
-            <Text style={s.title}>Profile Setup</Text>
-            <Text style={s.subtitle}>Add your Details</Text>
+            <Text style={[s.title, { color: palette.text }]}>Profile Setup</Text>
+            <Text style={[s.subtitle, { color: palette.textSecondary }]}>
+              Add your details
+            </Text>
 
-            <View style={[s.card, { alignItems: "center", marginTop: 12, marginBottom: 10 }]}>
-              <View style={s.avatarWrap}>
+            {/* Avatar */}
+            <View
+              style={[
+                s.card,
+                {
+                  backgroundColor: palette.card,
+                  borderColor: palette.border,
+                  alignItems: "center",
+                },
+              ]}
+            >
+              <View
+                style={[
+                  s.avatarWrap,
+                  { backgroundColor: palette.input, borderColor: palette.border },
+                ]}
+              >
                 {avatarUri ? (
                   <Image source={{ uri: avatarUri }} style={s.avatar} />
                 ) : (
-                  <Ionicons name="person" size={48} color="#8ecac1" />
+                  <Ionicons name="person" size={48} color={palette.textSecondary} />
                 )}
-                <Pressable onPress={pickAvatar} style={s.editBadge}>
-                  <Ionicons name="camera" size={16} color="#001018" />
+                <Pressable
+                  onPress={pickAvatar}
+                  style={[
+                    s.editBadge,
+                    {
+                      backgroundColor: palette.accent,
+                      borderColor: palette.background,
+                    },
+                  ]}
+                >
+                  <Ionicons name="camera" size={16} color={palette.background} />
                 </Pressable>
               </View>
-              <Text style={s.small}>
+              <Text style={[s.small, { color: palette.textSecondary }]}>
                 {avatarUri ? "Tap to change photo" : "Add a profile photo"}
               </Text>
-              {!!email && <Text style={[s.small, { marginTop: 6 }]}>Email: {email}</Text>}
+              {!!email && (
+                <Text style={[s.small, { color: palette.textSecondary, marginTop: 6 }]}>
+                  Email: {email}
+                </Text>
+              )}
             </View>
 
-            <View style={[s.card, { gap: 10 }]}>
-              <Text style={s.section}>👤 Basic Info</Text>
-              <Text style={s.label}>Full Name</Text>
+            {/* Basic Info */}
+            <View
+              style={[
+                s.card,
+                { backgroundColor: palette.card, borderColor: palette.border, gap: 10 },
+              ]}
+            >
+              <Text style={[s.section, { color: palette.accentAlt }]}>👤 Basic Info</Text>
+              <Text style={[s.label, { color: palette.text }]}>Full Name</Text>
               <TextInput
                 value={fullName}
                 onChangeText={setFullName}
-                style={s.input}
+                style={[
+                  s.input,
+                  {
+                    backgroundColor: palette.input,
+                    color: palette.text,
+                    borderColor: palette.border,
+                  },
+                ]}
                 placeholder="John Perera"
-                placeholderTextColor="#8ecac1"
+                placeholderTextColor={palette.textSecondary}
               />
-              <Text style={s.label}>Phone Number</Text>
+
+              <Text style={[s.label, { color: palette.text }]}>Phone Number</Text>
               <TextInput
                 value={phone}
                 onChangeText={setPhone}
-                style={s.input}
+                style={[
+                  s.input,
+                  {
+                    backgroundColor: palette.input,
+                    color: palette.text,
+                    borderColor: palette.border,
+                  },
+                ]}
                 placeholder="+94 7X XXX XXXX"
                 keyboardType="phone-pad"
-                placeholderTextColor="#8ecac1"
+                placeholderTextColor={palette.textSecondary}
               />
             </View>
 
-            <View style={[s.card, { gap: 10, marginTop: 12 }]}>
-              <Text style={s.section}>📍 Address</Text>
-              <Text style={s.label}>Address Line 1</Text>
+            {/* Address */}
+            <View
+              style={[
+                s.card,
+                { backgroundColor: palette.card, borderColor: palette.border, marginTop: 12, gap: 10 },
+              ]}
+            >
+              <Text style={[s.section, { color: palette.accentAlt }]}>📍 Address</Text>
+              <Text style={[s.label, { color: palette.text }]}>Address Line 1</Text>
               <TextInput
                 value={addr1}
                 onChangeText={setAddr1}
-                style={s.input}
+                style={[
+                  s.input,
+                  { backgroundColor: palette.input, color: palette.text, borderColor: palette.border },
+                ]}
                 placeholder="Street / House No."
-                placeholderTextColor="#8ecac1"
+                placeholderTextColor={palette.textSecondary}
               />
-              <Text style={s.label}>Address Line 2</Text>
+
+              <Text style={[s.label, { color: palette.text }]}>Address Line 2</Text>
               <TextInput
                 value={addr2}
                 onChangeText={setAddr2}
-                style={s.input}
+                style={[
+                  s.input,
+                  { backgroundColor: palette.input, color: palette.text, borderColor: palette.border },
+                ]}
                 placeholder="Area"
-                placeholderTextColor="#8ecac1"
+                placeholderTextColor={palette.textSecondary}
               />
+
               <View style={{ flexDirection: "row", gap: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.label}>City</Text>
+                  <Text style={[s.label, { color: palette.text }]}>City</Text>
                   <TextInput
                     value={city}
                     onChangeText={setCity}
-                    style={s.input}
+                    style={[
+                      s.input,
+                      { backgroundColor: palette.input, color: palette.text, borderColor: palette.border },
+                    ]}
                     placeholder="City"
-                    placeholderTextColor="#8ecac1"
+                    placeholderTextColor={palette.textSecondary}
                   />
                 </View>
                 <View style={{ width: 130 }}>
-                  <Text style={s.label}>Zip Code</Text>
+                  <Text style={[s.label, { color: palette.text }]}>Zip Code</Text>
                   <TextInput
                     value={zip}
                     onChangeText={setZip}
-                    style={s.input}
+                    style={[
+                      s.input,
+                      { backgroundColor: palette.input, color: palette.text, borderColor: palette.border },
+                    ]}
                     placeholder="00000"
                     keyboardType="number-pad"
-                    placeholderTextColor="#8ecac1"
+                    placeholderTextColor={palette.textSecondary}
                   />
                 </View>
               </View>
             </View>
 
+            {/* Button */}
             <Pressable
               onPress={onCreate}
-              style={[s.primaryBtn, loading && { opacity: 0.6 }]}
+              style={[
+                s.primaryBtn,
+                { backgroundColor: palette.accent },
+                loading && { opacity: 0.6 },
+              ]}
               disabled={loading}
             >
-              <Text style={s.primaryText}>
+              <Text style={[s.primaryText, { color: palette.background }]}>
                 {loading ? "Saving…" : "Create Account"}
               </Text>
             </Pressable>
@@ -216,35 +301,24 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "#101418",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#1a2232",
   },
   content: { flex: 1, paddingHorizontal: 16 },
-  card: {
-    backgroundColor: "#0f1418",
-    borderWidth: 1,
-    borderColor: "#1a2232",
-    borderRadius: 16,
-    padding: 16,
-  },
-  title: { fontSize: 22, fontWeight: "800", color: "#EFFFFB" },
-  subtitle: { color: "#8ecac1", marginTop: 6 },
-  small: { color: "#8ecac1" },
-  section: { color: "#9CD7D0", fontWeight: "800", marginBottom: 4 },
+  card: { borderWidth: 1, borderRadius: 16, padding: 16 },
+  title: { fontSize: 22, fontWeight: "800" },
+  subtitle: { marginTop: 6 },
+  small: { fontSize: 13 },
+  section: { fontWeight: "800", marginBottom: 4 },
   avatarWrap: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#101418",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
     overflow: "visible",
-    borderWidth: 2,
-    borderColor: "#1a2232",
     marginBottom: 8,
   },
   avatar: { width: "100%", height: "100%", borderRadius: 48 },
@@ -255,38 +329,26 @@ const s = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#00E0C6",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#0b0b0b",
   },
-  label: {
-    color: "#EFFFFB",
-    marginTop: 8,
-    marginBottom: 6,
-    fontWeight: "600",
-  },
+  label: { marginTop: 8, marginBottom: 6, fontWeight: "600" },
   input: {
-    backgroundColor: "#101418",
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 46,
-    borderColor: "#1a2232",
     borderWidth: 1,
-    color: "#fff",
   },
   primaryBtn: {
     marginTop: 16,
     height: 46,
-    backgroundColor: "#00E0C6",
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
-    shadowColor: "#00E0C6",
     shadowOpacity: 0.25,
     shadowRadius: 12,
   },
-  primaryText: { color: "#001018", fontWeight: "800" },
+  primaryText: { fontWeight: "800" },
 });

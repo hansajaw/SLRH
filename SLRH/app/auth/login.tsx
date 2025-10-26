@@ -5,20 +5,18 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  Switch,
   Alert,
-  Keyboard,
-  TouchableWithoutFeedback,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
+import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
-
-const S = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32, xxl: 40 };
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -27,6 +25,7 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const { login } = useUser();
+  const { palette } = useTheme();
 
   async function onLogin() {
     if (!email || !password) {
@@ -35,12 +34,9 @@ export default function Login() {
     }
     try {
       setLoading(true);
-      console.log("Attempting login:", { email });
       await login(email.trim(), password.trim(), remember);
-      Alert.alert("Welcome", "Logged in successfully!");
-      router.replace("/(tabs)"); 
+      router.replace("/(tabs)");
     } catch (e: any) {
-      console.error("Login error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ??
         (e?.message?.includes("Network")
@@ -52,222 +48,202 @@ export default function Login() {
     }
   }
 
-  async function onForgot() {
-    if (!email) {
-      Alert.alert("Forgot Password", "Enter your email above first.");
-      return;
-    }
-    try {
-      setLoading(true);
-      console.log("Sending forgot password request for:", email);
-      const { data } = await api.post("/auth/forgot", { email: email.trim() });
-      Alert.alert("Reset", data?.message ?? "If this email exists, a reset link was sent.");
-    } catch (e: any) {
-      console.error("Forgot error:", e?.response?.data || e?.message);
-      Alert.alert("Reset failed", e?.response?.data?.message ?? "Unable to send reset link.");
-    } finally {
-      setLoading(false);
-    }
+  function onGoogle() {
+    Alert.alert("Google Sign-in", "Hook your Google OAuth flow here.");
+  }
+  function onFacebook() {
+    Alert.alert("Facebook Sign-in", "Hook your Facebook OAuth flow here.");
   }
 
   return (
-    <SafeScreen bg="#0b0b0b">
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          <LinearGradient
-            colors={["#0E2322", "#0b0b0b"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={{ height: S.xxl + 80 }}
-          />
+    <SafeScreen bg={palette.background}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={[s.container, { backgroundColor: palette.background }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={s.centerBox}>
+            <Text style={[s.title, { color: palette.text }]}>Welcome Back!</Text>
+            <Text style={[s.subtitle, { color: palette.textSecondary }]}>
+              Sign in to continue your racing journey
+            </Text>
 
-          <View style={s.contentBottom}>
-            <View style={{ gap: S.sm }}>
-              <Text style={s.title}>Welcome Back!</Text>
-              <Text style={s.subtitle}>
-                Please enter your email & password to access your account.
-              </Text>
-            </View>
-
-            <View style={s.card}>
-              <Text style={s.label}>Email Address</Text>
+            {/* Input Card */}
+            <View
+              style={[
+                s.card,
+                { backgroundColor: palette.card, borderColor: palette.border },
+              ]}
+            >
+              <Text style={[s.label, { color: palette.text }]}>Email Address</Text>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@email.com"
-                placeholderTextColor="#8ecac1"
-                style={s.input}
+                placeholderTextColor={palette.textSecondary}
+                style={[
+                  s.input,
+                  {
+                    backgroundColor: palette.input,
+                    color: palette.text,
+                    borderColor: palette.border,
+                  },
+                ]}
                 autoCapitalize="none"
                 keyboardType="email-address"
               />
 
-              <Text style={[s.label, { marginTop: S.md }]}>Password</Text>
+              <Text style={[s.label, { color: palette.text, marginTop: 16 }]}>
+                Password
+              </Text>
               <View style={s.inputWrap}>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
                   placeholder="••••••••"
-                  placeholderTextColor="#8ecac1"
-                  style={[s.input, { paddingRight: 44 }]}
+                  placeholderTextColor={palette.textSecondary}
+                  style={[
+                    s.input,
+                    {
+                      backgroundColor: palette.input,
+                      color: palette.text,
+                      borderColor: palette.border,
+                      paddingRight: 44,
+                    },
+                  ]}
                   secureTextEntry={!showPw}
                 />
-                <Pressable
-                  onPress={() => setShowPw((v) => !v)}
-                  hitSlop={10}
-                  style={s.eyeBtn}
-                  accessibilityLabel={showPw ? "Hide password" : "Show password"}
-                >
+                <Pressable onPress={() => setShowPw(!showPw)} style={s.eyeBtn}>
                   <Ionicons
                     name={showPw ? "eye-off" : "eye"}
                     size={20}
-                    color="#9adbd2"
+                    color={palette.accent}
                   />
-                </Pressable>
-              </View>
-
-              <View style={[s.row, { marginTop: S.md }]}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: S.xs }}>
-                  <Switch
-                    value={remember}
-                    onValueChange={setRemember}
-                    thumbColor={remember ? "#00E0C6" : "#555"}
-                    trackColor={{ true: "#00E0C622", false: "#333" }}
-                  />
-                  <Text style={s.small}>Remember Me</Text>
-                </View>
-
-                <Pressable onPress={onForgot}>
-                  <Text style={[s.small, { color: "#00E0C6" }]}>
-                    Forgot Password?
-                  </Text>
                 </Pressable>
               </View>
             </View>
 
-            <View style={{ gap: S.sm, marginTop: S.lg }}>
+            {/* Buttons */}
+            <View style={{ gap: 12, marginTop: 20, width: "100%" }}>
               <Pressable
                 onPress={onLogin}
-                style={[s.primaryBtn, loading && { opacity: 0.6 }]}
+                style={[
+                  s.primaryBtn,
+                  { backgroundColor: palette.accent },
+                  loading && { opacity: 0.6 },
+                ]}
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="#001018" />
+                  <ActivityIndicator color={palette.background} />
                 ) : (
-                  <Text style={s.primaryText}>Log in</Text>
+                  <Text style={[s.primaryText, { color: palette.background }]}>
+                    Log In
+                  </Text>
                 )}
               </Pressable>
 
-              <Pressable style={s.socialBtn}>
-                <Ionicons name="logo-google" size={18} color="#00E0C6" />
-                <Text style={s.socialText}>Continue with Google</Text>
+              <Pressable
+                onPress={onGoogle}
+                style={[
+                  s.socialBtn,
+                  { backgroundColor: palette.input, borderColor: palette.border },
+                ]}
+              >
+                <Ionicons name="logo-google" size={18} color={palette.accent} />
+                <Text style={[s.socialText, { color: palette.text }]}>
+                  Continue with Google
+                </Text>
               </Pressable>
 
-              <Pressable style={s.socialBtn}>
-                <Ionicons name="logo-facebook" size={18} color="#00E0C6" />
-                <Text style={s.socialText}>Continue with Facebook</Text>
+              <Pressable
+                onPress={onFacebook}
+                style={[
+                  s.socialBtn,
+                  { backgroundColor: palette.input, borderColor: palette.border },
+                ]}
+              >
+                <Ionicons name="logo-facebook" size={18} color={palette.accent} />
+                <Text style={[s.socialText, { color: palette.text }]}>
+                  Continue with Facebook
+                </Text>
               </Pressable>
             </View>
 
-            <Text style={[s.small, { textAlign: "center", marginTop: S.lg }]}>
+            <Text
+              style={[
+                s.footerText,
+                { color: palette.textSecondary, marginTop: 20 },
+              ]}
+            >
               New here?{" "}
               <Text
+                style={{ color: palette.accent, fontWeight: "700" }}
                 onPress={() => router.push("/auth/signup")}
-                style={{ color: "#00E0C6", fontWeight: "700" }}
               >
                 Sign up
               </Text>
             </Text>
           </View>
-        </View>
-      </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeScreen>
   );
 }
 
 const s = StyleSheet.create({
-  contentBottom: {
-    flex: 1,
-    paddingHorizontal: S.lg,
-    justifyContent: "flex-end",
-    paddingBottom: S.xl,
-    gap: S.md,
+  container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 40,
   },
+  centerBox: { alignItems: "center", width: "100%" },
+  title: { fontSize: 26, fontWeight: "900", marginBottom: 4 },
+  subtitle: { fontSize: 14, marginBottom: 20 },
   card: {
-    backgroundColor: "#0f1418",
+    width: "100%",
     borderWidth: 1,
-    borderColor: "#1a2232",
     borderRadius: 16,
     padding: 16,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#EFFFFB",
-    letterSpacing: 0.25,
-    lineHeight: 30,
-  },
-  subtitle: { color: "#8ecac1", lineHeight: 22 },
-  label: {
-    color: "#EFFFFB",
-    fontWeight: "600",
-    letterSpacing: 0.2,
-    marginTop: 6,
+  label: { fontWeight: "700", marginBottom: 4 },
+  input: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    height: 48,
   },
   inputWrap: { position: "relative" },
-  input: {
-    backgroundColor: "#101418",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    height: 50,
-    borderColor: "#1a2232",
-    borderWidth: 1,
-    color: "#fff",
-    marginTop: 6,
-  },
   eyeBtn: {
     position: "absolute",
     right: 12,
-    top: 6 + (50 - 24) / 2,
+    top: (48 - 24) / 2,
     width: 32,
     height: 32,
     alignItems: "center",
     justifyContent: "center",
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  small: { color: "#8ecac1", lineHeight: 18 },
   primaryBtn: {
     height: 50,
-    backgroundColor: "#00E0C6",
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#00E0C6",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
   },
-  primaryText: {
-    color: "#001018",
-    fontWeight: "800",
-    letterSpacing: 0.4,
-  },
+  primaryText: { fontWeight: "900", fontSize: 16 },
   socialBtn: {
-    height: 50,
-    backgroundColor: "#101418",
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderColor: "#1a2232",
+    gap: 8,
   },
-  socialText: {
-    color: "#EFFFFB",
-    fontWeight: "600",
-    letterSpacing: 0.2,
-  },
+  socialText: { fontWeight: "600" },
+  footerText: { textAlign: "center", fontWeight: "600" },
 });

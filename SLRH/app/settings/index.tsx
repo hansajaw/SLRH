@@ -1,146 +1,272 @@
-import React from "react";
-import { View, Text, Pressable, StyleSheet, Switch, ScrollView } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Switch,
+  Alert,
+} from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useSettings } from "../store/settings";
+import { useRouter } from "expo-router";
+import { useTheme } from "../../context/ThemeContext";
+
+const MODES: Array<{
+  key: "system" | "light" | "dark";
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}> = [
+  { key: "system", label: "Use System Theme", icon: "phone-portrait-outline" },
+  { key: "light", label: "Light", icon: "sunny-outline" },
+  { key: "dark", label: "Dark", icon: "moon-outline" },
+];
 
 export default function SettingsScreen() {
+  const { theme, palette, setTheme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const sset = useSettings();
+
+  const [muted, setMuted] = useState(false);
+
+  const handleMuteToggle = (value: boolean) => {
+    setMuted(value);
+    Alert.alert(
+      value ? "Notifications Muted" : "Notifications Unmuted",
+      value
+        ? "You’ll no longer receive app notifications."
+        : "Notifications have been re-enabled."
+    );
+  };
 
   return (
-    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <View style={[s.top, { paddingTop: Math.max(8, insets.top * 0.25) }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} style={s.topBtn}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
-        <Text style={s.topTitle}>Settings</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <SafeAreaView
+      style={[s.safe, { backgroundColor: palette.background, paddingBottom: insets.bottom }]}
+    >
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 🌗 Theme Section */}
+        <View
+          style={[
+            s.card,
+            { backgroundColor: palette.card, borderColor: palette.border },
+          ]}
+        >
+          <Text style={[s.sectionTitle, { color: palette.text }]}>Appearance</Text>
+          <Text style={[s.sub, { color: palette.textSecondary }]}>
+            Choose how SLRH looks across the app.
+          </Text>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 16 + insets.bottom }}>
-        <Section title="Account">
-          <SettingLink icon="person-circle-outline" title="Profile" onPress={() => router.push("/profile")} />
-          <SettingLink
-            icon="shield-checkmark-outline"
-            title="Security"
-            subtitle="Password & 2-step verification"
-            onPress={() => router.push("/settings/security")}
-          />
-        </Section>
+          <View style={{ height: 10 }} />
+          {MODES.map((m) => {
+            const active = theme === m.key;
+            return (
+              <Pressable
+                key={m.key}
+                onPress={() => setTheme(m.key)}
+                style={[
+                  s.row,
+                  {
+                    backgroundColor: active ? palette.accent + "1A" : "transparent",
+                    borderColor: active ? palette.accent : palette.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    s.leftIcon,
+                    {
+                      backgroundColor: palette.background,
+                      borderColor: palette.border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={m.icon}
+                    size={16}
+                    color={active ? palette.accent : palette.textSecondary}
+                  />
+                </View>
+                <Text style={[s.optionLabel, { color: palette.text }]}>
+                  {m.label}
+                </Text>
+                <Ionicons
+                  name={active ? "radio-button-on" : "radio-button-off"}
+                  size={20}
+                  color={active ? palette.accent : palette.textSecondary}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
 
-        <Section title="Preferences">
-          <SettingLink
-            icon="language-outline"
-            title="Language"
-            subtitle={sset.language}
-            onPress={() => router.push("/settings/language")}
-          />
-          <SettingLink
-            icon="color-palette-outline"
-            title="Theme"
-            subtitle={sset.theme}
-            onPress={() => router.push("/settings/theme")}
-          />
-        </Section>
+        {/* 👤 Account Section */}
+        <View
+          style={[
+            s.card,
+            { backgroundColor: palette.card, borderColor: palette.border },
+          ]}
+        >
+          <Text style={[s.sectionTitle, { color: palette.text }]}>Account</Text>
 
-        <Section title="Notifications">
-          <SettingSwitch
-            icon="notifications-outline"
-            title="Push Notifications"
-            value={sset.pushEnabled}
-            onValueChange={sset.setPush}
-          />
-          <SettingSwitch
-            icon="mail-outline"
-            title="Email Updates"
-            value={sset.emailEnabled}
-            onValueChange={sset.setEmail}
-          />
-        </Section>
+          <Pressable
+            style={[s.row, { borderColor: palette.border }]}
+            onPress={() => router.push("/settings/changePassword")}
+          >
+            <View
+              style={[
+                s.leftIcon,
+                { backgroundColor: palette.background, borderColor: palette.border },
+              ]}
+            >
+              <Ionicons name="lock-closed-outline" size={16} color={palette.accent} />
+            </View>
+            <Text style={[s.optionLabel, { color: palette.text }]}>
+              Change Password
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={palette.textSecondary} />
+          </Pressable>
 
-        <Section title="Privacy & Data">
-          <SettingSwitch
-            icon="analytics-outline"
-            title="Share anonymous analytics"
-            value={sset.analyticsAllowed}
-            onValueChange={sset.setAnalytics}
-          />
-        </Section>
+          <View style={[s.row, { borderColor: palette.border }]}>
+            <View
+              style={[
+                s.leftIcon,
+                { backgroundColor: palette.background, borderColor: palette.border },
+              ]}
+            >
+              <Ionicons name="notifications-outline" size={16} color={palette.accent} />
+            </View>
+            <Text style={[s.optionLabel, { color: palette.text }]}>
+              Mute Notifications
+            </Text>
+            <Switch
+              value={muted}
+              onValueChange={handleMuteToggle}
+              thumbColor={muted ? palette.accent : palette.border}
+              trackColor={{
+                true: palette.accent + "33",
+                false: palette.border,
+              }}
+            />
+          </View>
+        </View>
+
+        {/* 📜 Legal Section */}
+        <View
+          style={[
+            s.card,
+            { backgroundColor: palette.card, borderColor: palette.border },
+          ]}
+        >
+          <Text style={[s.sectionTitle, { color: palette.text }]}>Legal</Text>
+
+          <Pressable
+            style={[s.row, { borderColor: palette.border }]}
+            onPress={() => router.push("/legal/privacy")}
+          >
+            <View
+              style={[
+                s.leftIcon,
+                { backgroundColor: palette.background, borderColor: palette.border },
+              ]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={16} color={palette.accent} />
+            </View>
+            <Text style={[s.optionLabel, { color: palette.text }]}>
+              Privacy Policy
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={palette.textSecondary} />
+          </Pressable>
+
+          <Pressable
+            style={[s.row, { borderColor: palette.border }]}
+            onPress={() => router.push("/legal/terms")}
+          >
+            <View
+              style={[
+                s.leftIcon,
+                { backgroundColor: palette.background, borderColor: palette.border },
+              ]}
+            >
+              <Ionicons name="document-text-outline" size={16} color={palette.accent} />
+            </View>
+            <Text style={[s.optionLabel, { color: palette.text }]}>
+              Terms & Conditions
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={palette.textSecondary} />
+          </Pressable>
+        </View>
+
+        {/* ⚙️ Other Section */}
+        <View
+          style={[
+            s.card,
+            { backgroundColor: palette.card, borderColor: palette.border },
+          ]}
+        >
+          <Text style={[s.sectionTitle, { color: palette.text }]}>General</Text>
+
+          <Pressable
+            style={[s.row, { borderColor: palette.border }]}
+            onPress={() =>
+              Alert.alert("Coming Soon", "Support and feedback options coming soon!")
+            }
+          >
+            <View
+              style={[
+                s.leftIcon,
+                { backgroundColor: palette.background, borderColor: palette.border },
+              ]}
+            >
+              <Ionicons name="chatbubble-outline" size={16} color={palette.accent} />
+            </View>
+            <Text style={[s.optionLabel, { color: palette.text }]}>
+              Contact Support
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={palette.textSecondary} />
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={s.section}>
-      <Text style={s.sectionTitle}>{title}</Text>
-      <View style={{ marginTop: 8 }}>{children}</View>
-    </View>
-  );
-}
-
-function SettingLink({
-  icon,
-  title,
-  subtitle,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle?: string;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={s.row}>
-      <Ionicons name={icon} size={20} color="#9adbd2" style={{ width: 28 }} />
-      <View style={{ flex: 1 }}>
-        <Text style={s.rowTitle}>{title}</Text>
-        {!!subtitle && <Text style={s.rowSub}>{subtitle}</Text>}
-      </View>
-      <Ionicons name="chevron-forward" size={18} color="#9AA0A6" />
-    </Pressable>
-  );
-}
-
-function SettingSwitch({
-  icon,
-  title,
-  value,
-  onValueChange,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-}) {
-  return (
-    <View style={s.row}>
-      <Ionicons name={icon} size={20} color="#9adbd2" style={{ width: 28 }} />
-      <Text style={[s.rowTitle, { flex: 1 }]}>{title}</Text>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: "#2b2b2b", true: "#00E0C6" }}
-        thumbColor="#fff"
-      />
-    </View>
-  );
-}
-
+/* -------------------- Styles -------------------- */
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0b0b0b" },
-  top: { paddingHorizontal: 16, paddingBottom: 8, backgroundColor: "#0b0b0b", flexDirection: "row", alignItems: "center" },
-  topBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  topTitle: { flex: 1, color: "#fff", fontSize: 20, fontWeight: "900", textAlign: "center" },
-
-  section: { marginHorizontal: 16, marginTop: 12, padding: 12, backgroundColor: "#101522", borderRadius: 16, borderWidth: 1, borderColor: "#1b2338" },
-  sectionTitle: { color: "#e8f6f4", fontWeight: "900", fontSize: 14 },
-
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255,255,255,0.06)" },
-  rowTitle: { color: "#fff", fontWeight: "800" },
-  rowSub: { color: "#A7AFB5", marginTop: 2 },
+  safe: { paddingTop:-50},
+  top: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: "900" },
+  sub: { marginTop: 4 },
+  row: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  leftIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  optionLabel: { flex: 1, fontWeight: "700" },
 });

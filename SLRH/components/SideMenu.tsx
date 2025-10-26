@@ -14,9 +14,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { router } from "expo-router";
 import { useUser } from "../context/UserContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function SideMenu({ navigation }: DrawerContentComponentProps) {
   const { user, logout } = useUser();
+  const { palette } = useTheme();
 
   const name = user?.fullName?.split(" ")[0] ?? "User";
   const caption =
@@ -54,75 +56,107 @@ export default function SideMenu({ navigation }: DrawerContentComponentProps) {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-
+    <SafeAreaView
+      style={[s.safe, { backgroundColor: palette.background }]}
+      edges={["top", "bottom"]}
+    >
+      {/* Gradient Header */}
       <LinearGradient
-        colors={["#103231", "#0b0b0b"]}
+        colors={[palette.card, palette.background]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={s.header}
+        style={[s.header, { borderBottomColor: palette.border }]}
       >
         <View style={s.headerRow}>
           <View style={s.avatarWrap}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={s.avatar} />
             ) : (
-              <View style={[s.avatar, s.avatarFallback]}>
-                <Text style={s.initial}>{initial}</Text>
+              <View
+                style={[
+                  s.avatar,
+                  { backgroundColor: palette.border, alignItems: "center", justifyContent: "center" },
+                ]}
+              >
+                <Text style={[s.initial, { color: palette.accent }]}>
+                  {initial}
+                </Text>
               </View>
             )}
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={s.hi}>
-              Hi, <Text style={{ color: "#C6FFF4" }}>{name}</Text>
+            <Text style={[s.hi, { color: palette.text }]}>
+              Hi, <Text style={{ color: palette.accent }}>{name}</Text>
             </Text>
-            <Text style={s.caption} numberOfLines={4}>
+            <Text
+              style={[s.caption, { color: palette.textSecondary }]}
+              numberOfLines={3}
+            >
               {caption}
             </Text>
           </View>
         </View>
       </LinearGradient>
 
-    
+      {/* Menu Body */}
       <ScrollView
         contentContainerStyle={s.scrollCC}
         showsVerticalScrollIndicator={false}
       >
         <View style={s.menuCol}>
-          <Group title="Store" icon="bag-handle-outline" />
-          <Item label="Visit Store" onPress={() => go("/store")} />
-          <Separator />
+          <Group title="Store" icon="bag-handle-outline" palette={palette} />
+          <Item label="Visit Store" onPress={() => go("/store")} palette={palette} />
+          <Separator palette={palette} />
 
-          <Group title="Sponsors" icon="ribbon-outline" />
-          <Item label="Our Sponsors" onPress={() => go("/sponsors")} />
-          <Separator />
+          <Group title="Sponsors" icon="ribbon-outline" palette={palette} />
+          <Item label="Our Sponsors" onPress={() => go("/sponsors")} palette={palette} />
+          <Separator palette={palette} />
 
-          <Group title="Fan Zone" icon="sparkles-outline" />
+          <Group title="Fan Zone" icon="sparkles-outline" palette={palette} />
           <SubItem
             icon="star-outline"
             label="Ratings"
             onPress={() => go("/fanzone/ratings")}
+            palette={palette}
           />
           <SubItem
             icon="help-buoy-outline"
             label="Polls & Quizzes"
             onPress={() => go("/fanzone/polls")}
+            palette={palette}
           />
-          <Separator />
+          <Separator palette={palette} />
 
-          <Group title="About Us" icon="information-circle-outline" />
-          <Item label="Who We Are" onPress={() => go("/about")} />
+          <Group title="About Us" icon="information-circle-outline" palette={palette} />
+          <Item label="Who We Are" onPress={() => go("/about")} palette={palette} />
+
           <View style={{ flexGrow: 1 }} />
         </View>
 
+        {/* Footer */}
         <View style={s.footer}>
-          <Pressable style={s.signOut} onPress={confirmSignOut}>
-            <Ionicons name="log-out-outline" size={18} color="#fff" />
-            <Text style={{ color: "#fff", fontWeight: "900" }}>Sign Out</Text>
+          <Pressable
+            style={[s.signOut, { backgroundColor: palette.accent }]}
+            onPress={confirmSignOut}
+          >
+            <Ionicons name="log-out-outline" size={18} color={palette.background} />
+            <Text
+              style={{
+                color: palette.background,
+                fontWeight: "900",
+              }}
+            >
+              Sign Out
+            </Text>
           </Pressable>
 
-          <Text style={s.footerNote} numberOfLines={1}>
+          <Text
+            style={[
+              s.footerNote,
+              { color: palette.textSecondary, textAlign: "center" },
+            ]}
+          >
             SLRH • Built for fans of speed
           </Text>
         </View>
@@ -131,28 +165,51 @@ export default function SideMenu({ navigation }: DrawerContentComponentProps) {
   );
 }
 
+/* ---------------- Reusable Elements ---------------- */
+
 function Group({
   title,
   icon,
+  palette,
 }: {
   title: string;
   icon: keyof typeof Ionicons.glyphMap;
+  palette: any;
 }) {
   return (
     <View style={s.headingRow}>
-      <View style={s.headingIcon}>
-        <Ionicons name={icon} size={16} color="#9adbd2" />
+      <View
+        style={[
+          s.headingIcon,
+          { backgroundColor: palette.accent + "22" },
+        ]}
+      >
+        <Ionicons name={icon} size={16} color={palette.accent} />
       </View>
-      <Text style={s.headingText}>{title}</Text>
+      <Text style={[s.headingText, { color: palette.text }]}>{title}</Text>
     </View>
   );
 }
 
-function Item({ label, onPress }: { label: string; onPress: () => void }) {
+function Item({
+  label,
+  onPress,
+  palette,
+}: {
+  label: string;
+  onPress: () => void;
+  palette: any;
+}) {
   return (
-    <Pressable onPress={onPress} style={s.item}>
-      <Text style={s.itemText}>{label}</Text>
-      <Ionicons name="chevron-forward" size={16} color="#8b9197" />
+    <Pressable
+      onPress={onPress}
+      style={[
+        s.item,
+        { backgroundColor: palette.card, borderColor: palette.border },
+      ]}
+    >
+      <Text style={[s.itemText, { color: palette.text }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={palette.textSecondary} />
     </Pressable>
   );
 }
@@ -161,49 +218,55 @@ function SubItem({
   icon,
   label,
   onPress,
+  palette,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
+  palette: any;
 }) {
   return (
-    <Pressable onPress={onPress} style={s.subItem}>
+    <Pressable
+      onPress={onPress}
+      style={[
+        s.subItem,
+        { backgroundColor: palette.card, borderColor: palette.border },
+      ]}
+    >
       <View style={s.subIcon}>
-        <Ionicons name={icon} size={16} color="#9adbd2" />
+        <Ionicons name={icon} size={16} color={palette.accent} />
       </View>
-      <Text style={s.subText}>{label}</Text>
-      <Ionicons name="chevron-forward" size={16} color="#8b9197" />
+      <Text style={[s.subText, { color: palette.text }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={palette.textSecondary} />
     </Pressable>
   );
 }
 
-function Separator() {
-  return <View style={s.separator} />;
+function Separator({ palette }: { palette: any }) {
+  return (
+    <View
+      style={[s.separator, { backgroundColor: palette.border + "33" }]}
+    />
+  );
 }
 
+/* ---------------- Styles ---------------- */
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0b0b0b" },
+  safe: { flex: 1 },
   header: {
     paddingHorizontal: 16,
     paddingTop: 22,
     paddingBottom: 22,
     borderBottomWidth: 1,
-    borderBottomColor: "#101417",
   },
   headerRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   avatarWrap: { width: 56, height: 56, borderRadius: 28, overflow: "hidden" },
   avatar: { width: "100%", height: "100%" },
-  avatarFallback: {
-    backgroundColor: "#1b1e24",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  initial: { color: "#95e7db", fontWeight: "900", fontSize: 18 },
-  hi: { color: "#EFFFFB", fontWeight: "900", fontSize: 18 },
+  initial: { fontWeight: "900", fontSize: 18 },
+  hi: { fontWeight: "900", fontSize: 18 },
   caption: {
-    color: "#94c8c1",
     marginTop: 8,
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 13,
     lineHeight: 18,
   },
@@ -214,14 +277,11 @@ const s = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "rgba(124, 240, 225, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-  headingText: { color: "#e5edf0", fontWeight: "900", fontSize: 14 },
+  headingText: { fontWeight: "900", fontSize: 14 },
   item: {
-    backgroundColor: "#0f1620",
-    borderColor: "#192334",
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 14,
@@ -230,10 +290,8 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  itemText: { color: "#fff", fontWeight: "800", flex: 1 },
+  itemText: { fontWeight: "800", flex: 1 },
   subItem: {
-    backgroundColor: "#0d121a",
-    borderColor: "#182133",
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -243,27 +301,16 @@ const s = StyleSheet.create({
     gap: 8,
   },
   subIcon: { width: 28, alignItems: "center" },
-  subText: { color: "#dfe6ea", fontWeight: "800", flex: 1 },
-  separator: {
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    marginVertical: 4,
-  },
+  subText: { fontWeight: "800", flex: 1 },
+  separator: { height: 1, marginVertical: 4 },
   footer: { paddingHorizontal: 14, paddingTop: 8 },
   signOut: {
     height: 48,
     borderRadius: 12,
-    backgroundColor: "#ef4444",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 8,
   },
-  footerNote: {
-    color: "#7c8791",
-    textAlign: "center",
-    marginTop: 8,
-    fontWeight: "700",
-    fontSize: 12,
-  },
+  footerNote: { marginTop: 8, fontWeight: "700", fontSize: 12 },
 });

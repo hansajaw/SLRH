@@ -1,151 +1,105 @@
 import React from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
-import { useRouter, useNavigation } from "expo-router";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-type Props = {
-  title?: string;
-  showMenu?: boolean;
-  showSearch?: boolean;
-  showProfile?: boolean;
-  showBack?: boolean;
-  onMenuPress?: () => void;
-  onSearchPress?: () => void;
-  onProfilePress?: () => void;
-  onBackPress?: () => void;
-  style?: any;
-};
+import { useNavigation, useRouter } from "expo-router";
+import { useTheme } from "../context/ThemeContext";
 
 export default function TopBar({
-  title = "SLRH",
-  showMenu = true,
-  showSearch = true,
-  showProfile = true,
-  showBack = false,
+  title = "Chats",
   onMenuPress,
   onSearchPress,
   onProfilePress,
-  onBackPress,
-  style,
-}: Props) {
-  const router = useRouter();
-  const nav = useNavigation<any>(); 
+}: {
+  title?: string;
+  onMenuPress?: () => void;
+  onSearchPress?: () => void;
+  onProfilePress?: () => void;
+}) {
   const insets = useSafeAreaInsets();
+  const nav = useNavigation<any>();
+  const router = useRouter();
+  const { palette } = useTheme();
 
-  const goProfile = onProfilePress ?? (() => router.push("/profile"));
-  const goSearch = onSearchPress ?? (() => router.push("/search"));
-  const openMenu = onMenuPress ?? (() => nav?.openDrawer?.());
-
-  const goBack =
-    onBackPress ??
-    (() => {
-      if (router.canGoBack()) {
-        router.back(); 
-      } else {
-        router.replace("/"); 
-      }
-    });
+  // Default handlers
+  const handleMenu = onMenuPress ?? (() => nav?.openDrawer?.());
+  const handleSearch = onSearchPress ?? (() => router.push("/search"));
+  const handleProfile = onProfilePress ?? (() => router.push("/profile"));
 
   return (
     <View
       style={[
-        styles.wrap,
-        { paddingTop: Math.max(8, insets.top * 0.25) },
-        style,
+        s.container,
+        {
+          paddingTop: insets.top + 5,
+          backgroundColor: palette.background,
+        },
       ]}
     >
-   
-      <View style={styles.left}>
-        {showBack ? (
-          <IconBtn icon="chevron-back" onPress={goBack} label="Go back" />
-        ) : showMenu ? (
-          <IconBtn icon="menu" onPress={openMenu} label="Open menu" />
-        ) : (
-          <View style={styles.btn} />
-        )}
+      {/* === Top Row (Icons) === */}
+      <View style={s.iconRow}>
+        {/* Left Icon (Menu) */}
+        <Pressable
+          onPress={handleMenu}
+          style={[s.iconBtn, { backgroundColor: palette.card }]}
+        >
+          <Ionicons name="menu" size={22} color={palette.text} />
+        </Pressable>
+
+        {/* Right Icons (Search + Profile) */}
+        <View style={s.rightIcons}>
+          <Pressable
+            onPress={handleSearch}
+            style={[s.iconBtn, { backgroundColor: palette.card }]}
+          >
+            <Ionicons name="search" size={20} color={palette.text} />
+          </Pressable>
+
+          <Pressable
+            onPress={handleProfile}
+            style={[s.iconBtn, { backgroundColor: palette.accent }]}
+          >
+            <Ionicons name="person" size={22} color={palette.background} />
+          </Pressable>
+        </View>
       </View>
 
- 
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
-
-
-      <View style={styles.right}>
-        {showSearch && (
-          <IconBtn icon="search" size={22} onPress={goSearch} label="Search" />
-        )}
-        {showProfile && (
-          <IconBtn
-            icon="person-circle"
-            onPress={goProfile}
-            label="My profile"
-          />
-        )}
-        {!showSearch && !showProfile ? <View style={styles.btn} /> : null}
-      </View>
+      {/* === Title Below Icons === */}
+      <Text style={[s.title, { color: palette.text }]}>{title}</Text>
     </View>
   );
 }
 
-
-function IconBtn({
-  icon,
-  onPress,
-  label,
-  size = 24,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  onPress: () => void;
-  label: string;
-  size?: number;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={styles.btn}
-      hitSlop={10}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Ionicons name={icon} size={size} color="#fff" />
-    </Pressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  wrap: {
-    backgroundColor: "#0b0b0b",
-    height: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    borderBottomColor: "#111",
-    borderBottomWidth: 1,
-  },
-  left: {
-    width: 48,
-    alignItems: "flex-start",
-    justifyContent: "center",
-  },
-  right: {
-    width: 96,
-    flexDirection: "row",
+/* ---------------- STYLES ---------------- */
+const s = StyleSheet.create({
+  container: {
+    height: 110,
+    width: "100%",
+    paddingHorizontal: 16,
     justifyContent: "flex-end",
+  },
+  iconRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
   },
-  btn: {
-    width: 36,
-    height: 36,
+  rightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
-    color: "#fff",
-    fontSize: 18,
+    marginTop: 6,
+    fontSize: 28,
     fontWeight: "800",
-    flex: 1,
-    textAlign: "center",
+    letterSpacing: 0.3,
+    fontFamily: "System",
   },
 });

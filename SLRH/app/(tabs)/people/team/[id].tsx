@@ -10,70 +10,112 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { getTeamById, getPeopleData } from "../../../data/people";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../../../../context/ThemeContext"; // 🎨 Theme support
 
 export default function TeamProfile() {
+  const { palette } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const team = id ? getTeamById(id) : undefined;
   const { drivers } = getPeopleData();
 
-  // Handle team not found
+  // If team not found
   if (!team) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.centerBox}>
-          <Text style={styles.miss}>Team not found</Text>
+      <SafeAreaView
+        style={[s.safe, { backgroundColor: palette.background }]}
+        edges={["top", "bottom"]}
+      >
+        <View style={s.centerBox}>
+          <Text style={[s.miss, { color: palette.text }]}>Team not found</Text>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.back}>← Back</Text>
+            <Text style={[s.back, { color: palette.accent }]}>← Back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Resolve team members
   const members = team.members.map((name) => {
     const d = drivers.find((x) => x.name === name);
     return { name, driverId: d?.id, avatar: d?.avatar };
   });
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color="#00E0C6" />
-          <Text style={styles.backTxt}>Back</Text>
+    <SafeAreaView
+      style={[s.safe, { backgroundColor: palette.background }]}
+      edges={["top", "bottom"]}
+    >
+      {/* Header */}
+      <View
+        style={[
+          s.header,
+          { backgroundColor: palette.background, borderBottomColor: palette.border },
+        ]}
+      >
+        <Pressable onPress={() => router.back()} style={s.backBtn}>
+          <Ionicons name="chevron-back" size={22} color={palette.accent} />
+          <Text style={[s.backTxt, { color: palette.accent }]}>Back</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Team Profile</Text>
+        <Text style={[s.headerTitle, { color: palette.text }]}>Team Profile</Text>
         <View style={{ width: 50 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.teamCard}>
+      {/* Body */}
+      <ScrollView contentContainerStyle={s.scrollContent}>
+        {/* Team Card */}
+        <View
+          style={[
+            s.teamCard,
+            { backgroundColor: palette.card, borderColor: palette.border },
+          ]}
+        >
           {team.logo ? (
-            <Image source={team.logo as any} style={styles.teamLogo} />
+            <Image source={team.logo as any} style={s.teamLogo} />
           ) : (
-            <View style={[styles.teamLogo, styles.ph]} />
+            <View style={[s.teamLogo, s.ph]} />
           )}
           <View style={{ flex: 1 }}>
-            <Text style={styles.teamName}>{team.name}</Text>
+            <Text style={[s.teamName, { color: palette.text }]}>{team.name}</Text>
             {team.achievements ? (
-              <Text style={styles.achievements}>{team.achievements}</Text>
+              <Text
+                style={[s.achievements, { color: palette.textSecondary }]}
+              >
+                {team.achievements}
+              </Text>
             ) : null}
           </View>
         </View>
 
-        <View style={styles.membersBlock}>
-          <Text style={styles.blockTitle}>Team Members</Text>
-          <View style={styles.membersList}>
+        {/* Members */}
+        <View
+          style={[
+            s.membersBlock,
+            { backgroundColor: palette.card, borderColor: palette.border },
+          ]}
+        >
+          <Text style={[s.blockTitle, { color: palette.accent }]}>
+            Team Members
+          </Text>
+
+          <View style={s.membersList}>
             {members.map((m) => {
               const content = (
-                <View style={styles.memberCard}>
+                <View
+                  style={[
+                    s.memberCard,
+                    { backgroundColor: palette.card, borderColor: palette.border },
+                  ]}
+                >
                   {m.avatar ? (
-                    <Image source={m.avatar as any} style={styles.memberAvatar} />
+                    <Image source={m.avatar as any} style={s.memberAvatar} />
                   ) : (
-                    <View style={[styles.memberAvatar, styles.ph]} />
+                    <View style={[s.memberAvatar, s.ph]} />
                   )}
-                  <Text style={styles.memberName}>{m.name}</Text>
+                  <Text style={[s.memberName, { color: palette.text }]}>
+                    {m.name}
+                  </Text>
                 </View>
               );
 
@@ -94,17 +136,14 @@ export default function TeamProfile() {
             })}
           </View>
         </View>
-
-        <Pressable onPress={() => router.back()} style={styles.bottomBack}>
-          <Text style={styles.bottomBackTxt}>← Back to Home</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0b0b0b" },
+/* ---------- Styles ---------- */
+const s = StyleSheet.create({
+  safe: { flex: 1 },
 
   // Header
   header: {
@@ -114,69 +153,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e1e1e",
-    backgroundColor: "#0b0b0b",
   },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  backTxt: { color: "#00E0C6", fontWeight: "700" },
-  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "900" },
+  backTxt: { fontWeight: "700" },
+  headerTitle: { fontSize: 18, fontWeight: "900" },
 
   scrollContent: { padding: 16, paddingBottom: 60 },
 
+  // Team Card
   teamCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
     padding: 14,
-    backgroundColor: "#141414",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222",
     marginBottom: 16,
   },
   teamLogo: { width: 90, height: 90, borderRadius: 12, resizeMode: "contain" },
   ph: { backgroundColor: "#222", borderWidth: 1, borderColor: "#2f2f2f" },
-  teamName: { color: "#fff", fontSize: 22, fontWeight: "900" },
-  achievements: { color: "#cfcfcf", marginTop: 4, fontSize: 14 },
+  teamName: { fontSize: 22, fontWeight: "900" },
+  achievements: { marginTop: 4, fontSize: 14 },
 
+  // Members
   membersBlock: {
-    backgroundColor: "#141414",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222",
     padding: 14,
   },
-  blockTitle: {
-    color: "#00E0C6",
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 12,
-  },
+  blockTitle: { fontSize: 18, fontWeight: "800", marginBottom: 12 },
   membersList: { gap: 12 },
   memberCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#191919",
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#262626",
   },
   memberAvatar: { width: 48, height: 48, borderRadius: 24, resizeMode: "cover" },
-  memberName: { color: "#fff", fontSize: 16, fontWeight: "700" },
-
-  bottomBack: {
-    marginTop: 24,
-    alignSelf: "center",
-    backgroundColor: "rgba(0,224,198,0.08)",
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-  },
-  bottomBackTxt: { color: "#00E0C6", fontWeight: "700" },
+  memberName: { fontSize: 16, fontWeight: "700" },
 
   centerBox: { flex: 1, justifyContent: "center", alignItems: "center" },
-  miss: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 10 },
-  back: { color: "#00E0C6", fontWeight: "700" },
+  miss: { fontSize: 18, fontWeight: "700", marginBottom: 10 },
+  back: { fontWeight: "700" },
 });

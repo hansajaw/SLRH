@@ -7,14 +7,17 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { AxiosError } from "axios";
 import SafeScreen from "../../components/SafeScreen";
 import { useUser } from "../../context/UserContext";
 import { api } from "../../lib/api";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -24,11 +27,10 @@ export default function Signup() {
   const [showPw2, setShowPw2] = useState(false);
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const { palette } = useTheme();
   const { login } = useUser();
 
   function validate() {
-    console.log("Validating signup:", { email, pw, pw2, agree });
     if (!email || !pw || !pw2) return "Please fill in all fields.";
     if (!email.includes("@")) return "Enter a valid email address.";
     if (pw.length < 6) return "Password must be at least 6 characters long.";
@@ -39,28 +41,19 @@ export default function Signup() {
 
   async function onContinue() {
     const err = validate();
-    if (err) {
-      Alert.alert("Check details", err);
-      return;
-    }
+    if (err) return Alert.alert("Check details", err);
 
     try {
       setLoading(true);
-      console.log("Sending signup request to:", `${api.defaults.baseURL}/auth/signup`);
-      const { data } = await api.post("/auth/signup", {
+      await api.post("/auth/signup", {
         email: email.trim(),
         password: pw,
         confirmPassword: pw2,
       });
-
-      console.log("Signup successful, logging in...");
       await login(email.trim(), pw, true);
-      console.log("Navigating to profile setup");
       router.push({ pathname: "/auth/profile-setup", params: { email } });
     } catch (error) {
       const e = error as AxiosError<{ message?: string }>;
-      console.log("Full error response:", e); 
-      console.error("Signup error:", e?.response?.data || e?.message || e);
       const message =
         e?.response?.data?.message ||
         (e?.message?.includes("Network")
@@ -72,109 +65,234 @@ export default function Signup() {
     }
   }
 
+  function onGoogle() {
+    Alert.alert("Google Sign-up", "Hook your Google OAuth flow here.");
+  }
+  function onFacebook() {
+    Alert.alert("Facebook Sign-up", "Hook your Facebook OAuth flow here.");
+  }
+
   return (
-    <SafeScreen bg="#0b0b0b">
-      <LinearGradient
-        colors={["#0E2322", "#0b0b0b"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ height: 140 }}
-      />
-
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={s.title}>Create Your Account</Text>
-        <Text style={s.subtitle}>Join the racing community now</Text>
-
-        <Text style={s.label}>Email Address</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@email.com"
-          placeholderTextColor="#777"
-          style={s.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <Text style={s.label}>Password</Text>
-        <View style={s.inputWrap}>
-          <TextInput
-            value={pw}
-            onChangeText={setPw}
-            placeholder="••••••••"
-            placeholderTextColor="#777"
-            style={[s.input, { paddingRight: 44 }]}
-            secureTextEntry={!showPw}
-          />
-          <Pressable onPress={() => setShowPw((v) => !v)} style={s.eyeBtn}>
-            <Ionicons name={showPw ? "eye-off" : "eye"} size={20} color="#9adbd2" />
-          </Pressable>
-        </View>
-
-        <Text style={s.label}>Confirm Password</Text>
-        <View style={s.inputWrap}>
-          <TextInput
-            value={pw2}
-            onChangeText={setPw2}
-            placeholder="••••••••"
-            placeholderTextColor="#777"
-            style={[s.input, { paddingRight: 44 }]}
-            secureTextEntry={!showPw2}
-          />
-          <Pressable onPress={() => setShowPw2((v) => !v)} style={s.eyeBtn}>
-            <Ionicons name={showPw2 ? "eye-off" : "eye"} size={20} color="#9adbd2" />
-          </Pressable>
-        </View>
-
-        <Pressable style={s.checkRow} onPress={() => setAgree(!agree)}>
-          <View
-            style={[
-              s.checkbox,
-              agree && { backgroundColor: "#00E0C6", borderColor: "#00E0C6" },
-            ]}
-          >
-            {agree && <Ionicons name="checkmark" size={16} color="#001018" />}
-          </View>
-          <Text style={s.agreeText}>
-            I agree to the <Text style={s.link}>Terms of Service</Text> and{" "}
-            <Text style={s.link}>Privacy Policy</Text>.
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={onContinue}
-          style={[s.primaryBtn, loading && { opacity: 0.6 }]}
-          disabled={loading}
+    <SafeScreen bg={palette.background}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={[s.container, { backgroundColor: palette.background }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={s.primaryText}>{loading ? "Please wait…" : "Continue"}</Text>
-        </Pressable>
+          <View style={s.centerBox}>
+            <Text style={[s.title, { color: palette.text }]}>Create Account</Text>
+            <Text style={[s.subtitle, { color: palette.textSecondary }]}>
+              Join the racing community now
+            </Text>
 
-        <Text style={[s.footerText, { marginTop: 20 }]}>
-          Already have an account?{" "}
-          <Text style={s.link} onPress={() => router.push("/auth/login")}>
-            Log in
-          </Text>
-        </Text>
-      </ScrollView>
+            {/* Input Card */}
+            <View
+              style={[
+                s.card,
+                { backgroundColor: palette.card, borderColor: palette.border },
+              ]}
+            >
+              <Text style={[s.label, { color: palette.text }]}>Email Address</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@email.com"
+                placeholderTextColor={palette.textSecondary}
+                style={[
+                  s.input,
+                  {
+                    backgroundColor: palette.input,
+                    color: palette.text,
+                    borderColor: palette.border,
+                  },
+                ]}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+
+              <Text style={[s.label, { marginTop: 16, color: palette.text }]}>
+                Password
+              </Text>
+              <View style={s.inputWrap}>
+                <TextInput
+                  value={pw}
+                  onChangeText={setPw}
+                  placeholder="••••••••"
+                  placeholderTextColor={palette.textSecondary}
+                  style={[
+                    s.input,
+                    {
+                      backgroundColor: palette.input,
+                      color: palette.text,
+                      borderColor: palette.border,
+                      paddingRight: 44,
+                    },
+                  ]}
+                  secureTextEntry={!showPw}
+                />
+                <Pressable onPress={() => setShowPw(!showPw)} style={s.eyeBtn}>
+                  <Ionicons
+                    name={showPw ? "eye-off" : "eye"}
+                    size={20}
+                    color={palette.accent}
+                  />
+                </Pressable>
+              </View>
+
+              <Text style={[s.label, { marginTop: 16, color: palette.text }]}>
+                Confirm Password
+              </Text>
+              <View style={s.inputWrap}>
+                <TextInput
+                  value={pw2}
+                  onChangeText={setPw2}
+                  placeholder="••••••••"
+                  placeholderTextColor={palette.textSecondary}
+                  style={[
+                    s.input,
+                    {
+                      backgroundColor: palette.input,
+                      color: palette.text,
+                      borderColor: palette.border,
+                      paddingRight: 44,
+                    },
+                  ]}
+                  secureTextEntry={!showPw2}
+                />
+                <Pressable onPress={() => setShowPw2(!showPw2)} style={s.eyeBtn}>
+                  <Ionicons
+                    name={showPw2 ? "eye-off" : "eye"}
+                    size={20}
+                    color={palette.accent}
+                  />
+                </Pressable>
+              </View>
+
+              {/* Agree */}
+              <Pressable style={s.checkRow} onPress={() => setAgree(!agree)}>
+                <View
+                  style={[
+                    s.checkbox,
+                    {
+                      borderColor: agree ? palette.accent : palette.textSecondary,
+                      backgroundColor: agree ? palette.accent : "transparent",
+                    },
+                  ]}
+                >
+                  {agree && (
+                    <Ionicons name="checkmark" size={16} color={palette.background} />
+                  )}
+                </View>
+                <Text style={[s.agreeText, { color: palette.textSecondary }]}>
+                  I agree to the{" "}
+                  <Text style={{ color: palette.accent, fontWeight: "800" }}>
+                    Terms of Service
+                  </Text>{" "}
+                  and{" "}
+                  <Text style={{ color: palette.accent, fontWeight: "800" }}>
+                    Privacy Policy
+                  </Text>
+                  .
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Buttons */}
+            <View style={{ gap: 12, marginTop: 20, width: "100%" }}>
+              <Pressable
+                onPress={onContinue}
+                style={[
+                  s.primaryBtn,
+                  { backgroundColor: palette.accent },
+                  loading && { opacity: 0.6 },
+                ]}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={palette.background} />
+                ) : (
+                  <Text style={[s.primaryText, { color: palette.background }]}>
+                    Continue
+                  </Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                onPress={onGoogle}
+                style={[
+                  s.socialBtn,
+                  { backgroundColor: palette.input, borderColor: palette.border },
+                ]}
+              >
+                <Ionicons name="logo-google" size={18} color={palette.accent} />
+                <Text style={[s.socialText, { color: palette.text }]}>
+                  Sign up with Google
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={onFacebook}
+                style={[
+                  s.socialBtn,
+                  { backgroundColor: palette.input, borderColor: palette.border },
+                ]}
+              >
+                <Ionicons name="logo-facebook" size={18} color={palette.accent} />
+                <Text style={[s.socialText, { color: palette.text }]}>
+                  Sign up with Facebook
+                </Text>
+              </Pressable>
+            </View>
+
+            <Text
+              style={[
+                s.footerText,
+                { color: palette.textSecondary, marginTop: 20 },
+              ]}
+            >
+              Already have an account?{" "}
+              <Text
+                style={{ color: palette.accent, fontWeight: "800" }}
+                onPress={() => router.push("/auth/login")}
+              >
+                Log in
+              </Text>
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeScreen>
   );
 }
 
 const s = StyleSheet.create({
-  scroll: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 60 },
-  title: { fontSize: 24, fontWeight: "900", color: "#EFFFFB", marginBottom: 4 },
-  subtitle: { color: "#9adbd2", marginBottom: 16, fontWeight: "600" },
-  label: { color: "#CFF9F3", fontWeight: "700", marginTop: 12, marginBottom: 6 },
-  inputWrap: { position: "relative" },
+  container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  centerBox: { alignItems: "center", width: "100%" },
+  title: { fontSize: 26, fontWeight: "900", marginBottom: 4 },
+  subtitle: { fontSize: 14, marginBottom: 20 },
+  card: {
+    width: "100%",
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+  },
+  label: { fontWeight: "700", marginBottom: 4 },
   input: {
-    backgroundColor: "#101418",
     borderRadius: 12,
+    borderWidth: 1,
     paddingHorizontal: 14,
     height: 48,
-    borderColor: "#1a2232",
-    borderWidth: 1,
-    color: "#fff",
   },
+  inputWrap: { position: "relative" },
   eyeBtn: {
     position: "absolute",
     right: 12,
@@ -184,27 +302,32 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  checkRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 18 },
+  checkRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 6,
-    borderColor: "#aaa",
     borderWidth: 1.4,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "transparent",
   },
-  agreeText: { color: "#d9e9e7", flex: 1, flexWrap: "wrap" },
-  link: { color: "#00E0C6", fontWeight: "800" },
+  agreeText: { flex: 1, flexWrap: "wrap" },
   primaryBtn: {
-    marginTop: 20,
-    height: 48,
-    backgroundColor: "#00E0C6",
+    height: 50,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },
-  primaryText: { color: "#001018", fontWeight: "900", fontSize: 16 },
-  footerText: { color: "#9adbd2", textAlign: "center", fontWeight: "600" },
-});
+  primaryText: { fontWeight: "900", fontSize: 16 },
+  socialBtn: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  socialText: { fontWeight: "600" },
+  footerText: { textAlign: "center", fontWeight: "600"}
+})
