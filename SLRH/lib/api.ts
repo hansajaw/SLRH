@@ -4,17 +4,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform, Alert } from "react-native";
 
 /* -------------------- Base URLs -------------------- */
-const PROD_URL = "https://slrh-4cql.vercel.app/api/v1";
-const LOCAL_ANDROID = "http://10.0.2.2:3001/api/v1";
-const LOCAL_IOS = "http://localhost:3001/api/v1";
+const PROD_URL = "https://slrh-4cql.vercel.app/api/v1"; // ✅ Your deployed backend
+const LOCAL_ANDROID = "http://10.0.2.2:3001/api/v1";     // Emulator
+const LOCAL_IOS = "http://localhost:3001/api/v1";        // iOS simulator
+const LOCAL_LAN = "http://192.168.8.101:3001/api/v1";    // Real device (Wi-Fi LAN) — update if needed
 
-// Use local API only while developing
-const baseURL =
-  __DEV__
-    ? Platform.OS === "android"
-      ? LOCAL_ANDROID
-      : LOCAL_IOS
-    : PROD_URL;
+// Detect environment
+let baseURL = PROD_URL; // default for production
+
+if (__DEV__) {
+  if (Platform.OS === "android") {
+    baseURL = LOCAL_ANDROID;
+  } else if (Platform.OS === "ios") {
+    baseURL = LOCAL_IOS;
+  } else {
+    baseURL = LOCAL_LAN;
+  }
+}
 
 console.log("🌍 Using API base URL:", baseURL);
 
